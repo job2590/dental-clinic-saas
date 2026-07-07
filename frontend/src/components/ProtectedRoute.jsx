@@ -10,6 +10,11 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
+  if (user.role === 'superadmin') {
+    // Superadmin no debe entrar a rutas de clínica, debe ir a su panel global
+    return <Navigate to="/superadmin/dashboard" replace />;
+  }
+
   return children;
 };
 

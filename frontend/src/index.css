@@ -3,7 +3,8 @@
 :root {
   --primary-color: #0d6efd;
   --secondary-color: #6c757d;
-  --bg-color: #f4f7f6;
+  --bg-color: #f8f9fa; /* Ligeramente más claro para el nuevo dashboard */
+  --sidebar-width: 260px;
 }
 
 body {
@@ -11,6 +12,11 @@ body {
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   margin: 0;
   padding: 0;
+}
+
+/* --- Transiciones Generales --- */
+.transition-all {
+  transition: all 0.3s ease;
 }
 
 /* --- Login Page Styling --- */
@@ -23,11 +29,9 @@ body {
   max-width: 440px;
   background: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.4);
-  /* Sombras para efecto premium */
   box-shadow: 0 1rem 3rem rgba(0,0,0,0.08) !important;
 }
 
-/* Transiciones suaves para inputs */
 .login-card .form-control,
 .login-card .input-group-text {
   transition: all 0.3s ease;
@@ -51,22 +55,179 @@ body {
   border-color: #86b7fe;
 }
 
-/* Checkbox personalizado */
 .form-check-input:checked {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
 }
 
-/* --- Dashboard Styling --- */
-.navbar {
-  /* Fondo moderno estilo degradado azul/turquesa clínico */
-  background: linear-gradient(90deg, #0d6efd 0%, #0a58ca 100%) !important;
+/* --- Layout SaaS & Sidebar --- */
+.layout-wrapper {
+  height: 100vh;
+  overflow: hidden;
 }
 
-.empty-dashboard-card {
-  background-color: #ffffff;
-  min-height: 60vh;
+.sidebar {
+  height: 100vh;
+  width: var(--sidebar-width);
+  z-index: 100;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+}
+
+.sidebar-open {
+  width: var(--sidebar-width);
+}
+
+.sidebar-closed {
+  width: 80px; /* Ancho colapsado */
+}
+
+/* Ocultar textos cuando el sidebar está colapsado */
+.sidebar-closed .nav-link span,
+.sidebar-closed .sidebar-brand span,
+.sidebar-closed .sidebar-footer small {
+  display: none !important;
+}
+
+/* Centrar iconos cuando el sidebar está colapsado */
+.sidebar-closed .nav-link {
   justify-content: center;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.sidebar-closed .sidebar-brand {
+  justify-content: center;
+}
+
+.hover-bg:hover {
+  background-color: #f8f9fa;
+}
+
+.hover-bg-white:hover {
+  background-color: #ffffff !important;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* --- TopNavbar --- */
+.toggle-btn:hover {
+  background-color: #f1f3f5 !important;
+}
+
+/* --- Dashboard Styling --- */
+.kpi-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.08) !important;
+}
+
+.tracking-wide {
+  letter-spacing: 0.05em;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* ====== TRANSICIONES GLOBALES MODO OSCURO ====== */
+html, body, .card, .navbar, .sidebar, .btn, .alert {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+[data-bs-theme="dark"] body {
+  background-color: #121212 !important;
+}
+
+[data-bs-theme="dark"] .bg-white {
+  background-color: #1e1e1e !important;
+}
+
+[data-bs-theme="dark"] .bg-light {
+  background-color: #2d2d2d !important;
+}
+
+[data-bs-theme="dark"] .text-dark {
+  color: #f8f9fa !important;
+}
+
+[data-bs-theme="dark"] .text-muted, 
+[data-bs-theme="dark"] .text-secondary {
+  color: #adb5bd !important;
+}
+
+[data-bs-theme="dark"] .border-light, 
+[data-bs-theme="dark"] .border-bottom {
+  border-color: #343a40 !important;
+}
+
+[data-bs-theme="dark"] .table {
+  --bs-table-color: #f8f9fa;
+  --bs-table-bg: transparent;
+  --bs-table-border-color: #343a40;
+}
+
+[data-bs-theme="dark"] .table-light {
+  --bs-table-bg: #2d2d2d;
+  --bs-table-color: #adb5bd;
+}
+
+[data-bs-theme="dark"] .card {
+  background-color: #1e1e1e !important;
+  border: 1px solid #343a40 !important;
+}
+
+[data-bs-theme="dark"] .modal-content {
+  background-color: #1e1e1e;
+  color: #f8f9fa;
+}
+
+[data-bs-theme="dark"] input.form-control,
+[data-bs-theme="dark"] select.form-select,
+[data-bs-theme="dark"] textarea.form-control {
+  background-color: #2d2d2d !important;
+  border-color: #495057 !important;
+  color: #fff !important;
+}
+
+/* ====== TABLAS Y HOVERS ====== */
+.table-hover tbody tr:hover {
+  background-color: rgba(13, 110, 253, 0.05) !important;
+  transition: background-color 0.2s ease;
+}
+
+[data-bs-theme="dark"] .table-hover tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* ====== SWEETALERT2 DARK MODE ====== */
+[data-bs-theme="dark"] .swal2-popup {
+  background: #1e1e1e;
+  color: #fff;
+}
+[data-bs-theme="dark"] .swal2-title {
+  color: #fff;
+}
+[data-bs-theme="dark"] .swal2-html-container {
+  color: #adb5bd;
 }

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authenticateUser, getClinicById } from '../services/superAdminService';
 
 const AuthContext = createContext();
 
@@ -9,38 +10,52 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [clinic, setClinic] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simular validación de sesión (futuro: supabase.auth.getSession())
-    const storedUser = localStorage.getItem('clinic_user') || sessionStorage.getItem('clinic_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    const fetchStoredUser = async () => {
+      const storedUser = localStorage.getItem('clinic_user') || sessionStorage.getItem('clinic_user');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        if (parsedUser.clinic_id) {
+          const c = await getClinicById(parsedUser.clinic_id);
+          setClinic(c);
+        }
+      }
+      setIsLoading(false);
+    };
+    fetchStoredUser();
     setIsLoading(false);
   }, []);
 
   const login = async (email, password, rememberMe) => {
     setIsLoading(true);
-    // TODO: Reemplazar por supabase.auth.signInWithPassword
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        if (email && password) {
-          const fakeUser = { id: 1, email, role: 'admin', name: 'Dr. Admin' };
-          setUser(fakeUser);
-          if (rememberMe) {
-            localStorage.setItem('clinic_user', JSON.stringify(fakeUser));
-          } else {
-            sessionStorage.setItem('clinic_user', JSON.stringify(fakeUser));
-          }
-          setIsLoading(false);
-          resolve({ data: { user: fakeUser }, error: null });
-        } else {
-          setIsLoading(false);
-          resolve({ data: null, error: { message: 'El correo o la contraseña son incorrectos.' } });
-        }
-      }, 800);
-    });
+    const { user: authUser, error } = await authenticateUser(email, password);
+    
+    if (error) {
+      setIsLoading(false);
+      return { data: null, error };
+    }
+
+    setUser(authUser);
+    
+    if (authUser.clinic_id) {
+      const c = await getClinicById(authUser.clinic_id);
+      setClinic(c);
+    } else {
+      setClinic(null); // SuperAdmin doesn't have a clinic by default
+    }
+
+    if (rememberMe) {
+      localStorage.setItem('clinic_user', JSON.stringify(authUser));
+    } else {
+      sessionStorage.setItem('clinic_user', JSON.stringify(authUser));
+    }
+    
+    setIsLoading(false);
+    return { data: { user: authUser }, error: null };
   };
 
   const logout = async () => {
@@ -49,6 +64,7 @@ export const AuthProvider = ({ children }) => {
     return new Promise((resolve) => {
       setTimeout(() => {
         setUser(null);
+        setClinic(null);
         localStorage.removeItem('clinic_user');
         sessionStorage.removeItem('clinic_user');
         setIsLoading(false);
@@ -59,6 +75,7 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    clinic,
     isLoading,
     login,
     logout

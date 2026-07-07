@@ -26,7 +26,11 @@ const Login = () => {
     if (loginError) {
       setError(loginError.message);
     } else if (data?.user) {
-      navigate('/dashboard');
+      if (data.user.role === 'superadmin') {
+        navigate('/superadmin/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     }
   };
 
