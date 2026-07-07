@@ -1,36 +1,38 @@
-const STORAGE_KEY = 'clinic_histories';
-
-const getStoredHistories = () => {
-  const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : {};
-};
-
-const saveStoredHistories = (histories) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(histories));
-};
+import { supabase } from '../lib/supabase';
 
 export const getClinicalHistory = async (pacienteId, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const histories = getStoredHistories();
-      const key = `${clinicId}_${pacienteId}`;
-      resolve(histories[key] || null);
-    }, 400);
-  });
+  const { data, error } = await supabase
+    .from('historias_clinicas')
+    .select('*')
+    .eq('paciente_id', pacienteId)
+    .eq('clinic_id', clinicId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found"
+    throw error;
+  }
+  return data || null;
 };
 
 export const saveClinicalHistory = async (pacienteId, historyData, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const histories = getStoredHistories();
-      const key = `${clinicId}_${pacienteId}`;
-      histories[key] = {
-        ...historyData,
-        clinic_id: String(clinicId),
-        updated_at: new Date().toISOString()
-      };
-      saveStoredHistories(histories);
-      resolve(histories[key]);
-    }, 600);
-  });
+  const existing = await getClinicalHistory(pacienteId, clinicId);
+
+  if (existing) {
+    const { data, error } = await supabase
+      .from('historias_clinicas')
+      .update(historyData)
+      .eq('id', existing.id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  } else {
+    const { data, error } = await supabase
+      .from('historias_clinicas')
+      .insert([{ ...historyData, paciente_id: pacienteId, clinic_id: clinicId }])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
 };

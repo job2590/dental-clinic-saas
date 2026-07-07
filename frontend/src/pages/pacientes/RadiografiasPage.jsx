@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import { getPatientById } from '../../services/patientService';
 import { getRadiographiesByPatient, createRadiography, deleteRadiography } from '../../services/radiographyService';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 
 const IMAGE_TYPES = [
   'Panorámica',
@@ -31,10 +32,12 @@ const RadiografiasPage = () => {
   const [formData, setFormData] = useState({
     tipo: 'Panorámica',
     fecha: new Date().toISOString().split('T')[0],
-    notas: '',
-    base64Data: ''
+    notas: ''
   });
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
   const [uploadError, setUploadError] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -69,40 +72,57 @@ const RadiografiasPage = () => {
       setUploadError('Por favor, selecciona un archivo de imagen válido (JPG, PNG).');
       return;
     }
-    
-    // Límite conservador para localStorage (1.5 MB aprox por archivo)
-    if (file.size > 1.5 * 1024 * 1024) {
-      setUploadError('Para esta versión de prueba sin base de datos en la nube, las imágenes deben pesar menos de 1.5MB.');
-      return;
-    }
 
+    setSelectedFile(file);
     const reader = new FileReader();
     reader.onload = (event) => {
-      setFormData(prev => ({ ...prev, base64Data: event.target.result }));
+      setPreviewUrl(event.target.result);
     };
     reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.base64Data) {
+    if (!selectedFile) {
       setUploadError('Debes adjuntar una imagen.');
       return;
     }
 
     try {
-      await createRadiography(id, formData, user.clinic_id);
+      setUploading(true);
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${user.clinic_id}_${id}_${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('radiografias')
+        .upload(fileName, selectedFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('radiografias').getPublicUrl(fileName);
+      
+      const radiographyData = {
+        ...formData,
+        imagen_url: urlData.publicUrl
+      };
+
+      await createRadiography(radiographyData, user.clinic_id);
+      
       setShowUploadModal(false);
       setFormData({
         tipo: 'Panorámica',
         fecha: new Date().toISOString().split('T')[0],
-        notas: '',
-        base64Data: ''
+        notas: ''
       });
+      setSelectedFile(null);
+      setPreviewUrl('');
       if (fileInputRef.current) fileInputRef.current.value = '';
       fetchData();
     } catch (_err) {
-      setUploadError('Error al guardar. Es posible que el almacenamiento del navegador esté lleno.');
+      console.error(_err);
+      setUploadError('Error al subir la imagen a la nube.');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -182,7 +202,7 @@ const RadiografiasPage = () => {
                 <div className="position-relative bg-dark" style={{paddingTop: '75%', overflow: 'hidden'}}>
                   {/* Thumbnail */}
                   <img 
-                    src={img.base64Data} 
+                    src={img.imagen_url} 
                     alt={img.tipo}
                     className="position-absolute top-0 start-0 w-100 h-100"
                     style={{objectFit: 'cover', opacity: 0.9, transition: 'transform 0.3s ease'}}
@@ -241,7 +261,7 @@ const RadiografiasPage = () => {
 
           <div className="w-100 h-100 d-flex justify-content-center align-items-center p-md-5" onClick={() => setPreviewImage(null)}>
             <img 
-              src={previewImage.base64Data} 
+              src={previewImage.imagen_url} 
               alt={previewImage.tipo} 
               className="img-fluid rounded shadow-lg"
               style={{maxHeight: '85vh', maxWidth: '90vw', objectFit: 'contain', animation: 'zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'}}
@@ -278,14 +298,15 @@ const RadiografiasPage = () => {
                   <div className="col-12">
                     <label className="form-label text-dark fw-bold mb-2">Seleccionar Archivo (JPG, PNG)</label>
                     <div className="border border-2 border-dashed border-secondary rounded-4 p-4 text-center bg-light">
-                      {formData.base64Data ? (
+                      {previewUrl ? (
                         <div className="position-relative d-inline-block">
-                          <img src={formData.base64Data} alt="Preview" className="img-thumbnail rounded-3 shadow-sm" style={{maxHeight: '120px'}} />
+                          <img src={previewUrl} alt="Preview" className="img-thumbnail rounded-3 shadow-sm" style={{maxHeight: '120px'}} />
                           <button 
                             type="button" 
                             className="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle p-1"
                             onClick={() => {
-                               setFormData(prev => ({...prev, base64Data: ''}));
+                               setSelectedFile(null);
+                               setPreviewUrl('');
                                if(fileInputRef.current) fileInputRef.current.value = '';
                             }}
                           ><i className="bi bi-x"></i></button>
@@ -303,9 +324,9 @@ const RadiografiasPage = () => {
                         className="form-control mt-2" 
                         onChange={handleFileChange}
                         ref={fileInputRef}
-                        style={{display: formData.base64Data ? 'none' : 'block'}}
+                        style={{display: previewUrl ? 'none' : 'block'}}
                       />
-                      <small className="text-muted mt-2 d-block">Límite recomendado: 1.5MB (Versión Local)</small>
+                      <small className="text-muted mt-2 d-block">Subida directa a Supabase Storage</small>
                     </div>
                   </div>
 
@@ -332,7 +353,8 @@ const RadiografiasPage = () => {
             
             <div className="card-footer bg-light p-3 d-flex justify-content-end gap-2 border-top-0 rounded-bottom-4">
               <button type="button" className="btn btn-light" onClick={() => setShowUploadModal(false)}>Cancelar</button>
-              <button type="submit" form="uploadForm" className="btn btn-dark px-4 fw-medium shadow-sm">
+              <button type="submit" form="uploadForm" className="btn btn-dark px-4 fw-medium shadow-sm" disabled={uploading}>
+                {uploading ? <span className="spinner-border spinner-border-sm me-2" /> : null}
                 Guardar en Expediente
               </button>
             </div>

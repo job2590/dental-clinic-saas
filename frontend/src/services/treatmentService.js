@@ -1,65 +1,60 @@
-const STORAGE_KEY = 'clinic_treatments';
-
-const getStoredTreatments = () => {
-  const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : [];
-};
-
-const saveStoredTreatments = (treatments) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(treatments));
-};
+import { supabase } from '../lib/supabase';
 
 export const getTreatmentsByPatient = async (pacienteId, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const all = getStoredTreatments();
-      resolve(all.filter(t => t.paciente_id === String(pacienteId) && t.clinic_id === String(clinicId)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)));
-    }, 300);
-  });
+  // We need to join with historias_clinicas since tratamientos link to it, 
+  // or we can adjust if we link treatment to patient directly.
+  // Wait, in schema.sql:
+  // tratamientos: historia_clinica_id REFERENCES historias_clinicas(id)
+  // Let's get the historia_clinica_id for the patient.
+  const { data: hc } = await supabase.from('historias_clinicas').select('id').eq('paciente_id', pacienteId).eq('clinic_id', clinicId).single();
+  
+  if (!hc) return [];
+
+  const { data, error } = await supabase
+    .from('tratamientos')
+    .select('*, usuarios(nombre)')
+    .eq('historia_clinica_id', hc.id)
+    .eq('clinic_id', clinicId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data;
 };
 
 export const createTreatment = async (pacienteId, treatmentData, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const all = getStoredTreatments();
-      const newTreatment = {
-        ...treatmentData,
-        id: Date.now().toString(),
-        paciente_id: String(pacienteId),
-        clinic_id: String(clinicId),
-        fecha_registro: new Date().toISOString()
-      };
-      all.unshift(newTreatment);
-      saveStoredTreatments(all);
-      resolve(newTreatment);
-    }, 400);
-  });
+  const { data: hc } = await supabase.from('historias_clinicas').select('id').eq('paciente_id', pacienteId).eq('clinic_id', clinicId).single();
+  if (!hc) throw new Error("Historia clínica no encontrada");
+
+  const { data, error } = await supabase
+    .from('tratamientos')
+    .insert([{ ...treatmentData, historia_clinica_id: hc.id, clinic_id: clinicId }])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 };
 
 export const updateTreatment = async (id, treatmentData, clinicId) => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const all = getStoredTreatments();
-      const index = all.findIndex(t => t.id === String(id) && t.clinic_id === String(clinicId));
-      
-      if (index !== -1) {
-        all[index] = { ...all[index], ...treatmentData, clinic_id: String(clinicId) };
-        saveStoredTreatments(all);
-        resolve(all[index]);
-      } else {
-        reject(new Error('Tratamiento no encontrado'));
-      }
-    }, 400);
-  });
+  const { data, error } = await supabase
+    .from('tratamientos')
+    .update(treatmentData)
+    .eq('id', id)
+    .eq('clinic_id', clinicId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 };
 
 export const deleteTreatment = async (id, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const all = getStoredTreatments();
-      const filtered = all.filter(t => !(t.id === String(id) && t.clinic_id === String(clinicId)));
-      saveStoredTreatments(filtered);
-      resolve(true);
-    }, 300);
-  });
+  const { error } = await supabase
+    .from('tratamientos')
+    .delete()
+    .eq('id', id)
+    .eq('clinic_id', clinicId);
+
+  if (error) throw error;
+  return true;
 };

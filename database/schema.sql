@@ -8,6 +8,8 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ==============================================================================
 -- LIMPIEZA DE TABLAS EXISTENTES (Si las hay)
 -- ==============================================================================
+DROP TABLE IF EXISTS notificaciones CASCADE;
+DROP TABLE IF EXISTS radiografias CASCADE;
 DROP TABLE IF EXISTS odontogramas CASCADE;
 DROP TABLE IF EXISTS pagos CASCADE;
 DROP TABLE IF EXISTS tratamientos CASCADE;
@@ -76,6 +78,7 @@ CREATE TABLE pacientes (
     email VARCHAR(255),
     direccion TEXT,
     alergias TEXT,
+    foto_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(clinic_id, documento_identidad)
 );
@@ -130,7 +133,7 @@ CREATE TABLE pagos (
 );
 
 -- ==============================================================================
--- 4. ODONTOGRAMA
+-- 4. ODONTOGRAMA Y RADIOGRAFIAS
 -- ==============================================================================
 
 CREATE TABLE odontogramas (
@@ -141,8 +144,33 @@ CREATE TABLE odontogramas (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE radiografias (
+    id SERIAL PRIMARY KEY,
+    clinic_id INT NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    paciente_id INT NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
+    fecha DATE NOT NULL,
+    tipo VARCHAR(100) NOT NULL, -- ej. Periapical, Panorámica, etc.
+    notas TEXT,
+    imagen_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ==============================================================================
--- 5. ÍNDICES (Para consultas rápidas multi-tenant)
+-- 5. NOTIFICACIONES
+-- ==============================================================================
+
+CREATE TABLE notificaciones (
+    id SERIAL PRIMARY KEY,
+    clinic_id INT REFERENCES clinics(id) ON DELETE CASCADE, -- Si es null, es global
+    titulo VARCHAR(255) NOT NULL,
+    mensaje TEXT NOT NULL,
+    tipo VARCHAR(50) DEFAULT 'sistema', -- 'sistema', 'anuncio', etc.
+    leida BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ==============================================================================
+-- 6. ÍNDICES (Para consultas rápidas multi-tenant)
 -- ==============================================================================
 
 CREATE INDEX idx_usuarios_clinic ON usuarios(clinic_id);
@@ -151,9 +179,33 @@ CREATE INDEX idx_citas_clinic ON citas(clinic_id);
 CREATE INDEX idx_tratamientos_clinic ON tratamientos(clinic_id);
 CREATE INDEX idx_pagos_clinic ON pagos(clinic_id);
 CREATE INDEX idx_odontogramas_clinic ON odontogramas(clinic_id);
+CREATE INDEX idx_radiografias_clinic ON radiografias(clinic_id);
+CREATE INDEX idx_notificaciones_clinic ON notificaciones(clinic_id);
 
 -- ==============================================================================
 -- INSERCIÓN DE DATOS INICIALES (SUPER ADMIN)
 -- ==============================================================================
 INSERT INTO usuarios (rol_id, nombre, email, password, activo) 
 VALUES (1, 'Super Admin', 'superadmin@saas.com', 'admin', true);
+
+-- ==============================================================================
+-- DESACTIVAR RLS PARA FACILITAR PRUEBAS (En producción se deben activar políticas)
+-- ==============================================================================
+ALTER TABLE clinics DISABLE ROW LEVEL SECURITY;
+ALTER TABLE roles DISABLE ROW LEVEL SECURITY;
+ALTER TABLE usuarios DISABLE ROW LEVEL SECURITY;
+ALTER TABLE pacientes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE historias_clinicas DISABLE ROW LEVEL SECURITY;
+ALTER TABLE citas DISABLE ROW LEVEL SECURITY;
+ALTER TABLE tratamientos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE pagos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE odontogramas DISABLE ROW LEVEL SECURITY;
+ALTER TABLE radiografias DISABLE ROW LEVEL SECURITY;
+ALTER TABLE notificaciones DISABLE ROW LEVEL SECURITY;
+
+-- ==============================================================================
+-- POLITICAS DE STORAGE (Ejecutar manualmente en Storage > Policies si es necesario)
+-- ==============================================================================
+-- CREATE POLICY "Permitir lectura publica" ON storage.objects FOR SELECT USING ( bucket_id IN ('avatars', 'logos', 'patient-photos', 'radiografias') );
+-- CREATE POLICY "Permitir subida publica" ON storage.objects FOR INSERT WITH CHECK ( bucket_id IN ('avatars', 'logos', 'patient-photos', 'radiografias') );
+-- CREATE POLICY "Permitir actualizacion publica" ON storage.objects FOR UPDATE USING ( bucket_id IN ('avatars', 'logos', 'patient-photos', 'radiografias') );

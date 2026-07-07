@@ -77,8 +77,8 @@ const PacienteProfile = () => {
             <div className="card-body p-4 text-center">
               <div className="avatar-wrapper mb-4 position-relative d-inline-block">
                 <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex flex-column align-items-center justify-content-center mx-auto border border-4 border-white shadow-sm" style={{width: '140px', height: '140px', fontSize: '3rem'}}>
-                  {patient.foto ? (
-                    <img src={patient.foto} alt="Perfil" className="w-100 h-100 rounded-circle object-fit-cover" />
+                  {patient.foto_url ? (
+                    <img src={patient.foto_url} alt="Perfil" className="w-100 h-100 rounded-circle object-fit-cover" />
                   ) : (
                     patient.nombre.charAt(0)
                   )}

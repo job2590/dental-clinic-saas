@@ -1,36 +1,38 @@
-const STORAGE_KEY = 'clinic_odontograms';
+import { supabase } from '../lib/supabase';
 
-const getStoredOdontograms = () => {
-  const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : {};
+export const getOdontogramByPatient = async (patientId, clinicId) => {
+  const { data, error } = await supabase
+    .from('odontogramas')
+    .select('*')
+    .eq('paciente_id', patientId)
+    .eq('clinic_id', clinicId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    throw error;
+  }
+  return data || null;
 };
 
-const saveStoredOdontograms = (odontograms) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(odontograms));
-};
+export const saveOdontogram = async (patientId, dientesData, clinicId) => {
+  const existing = await getOdontogramByPatient(patientId, clinicId);
 
-export const getOdontogramByPatient = async (pacienteId, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const all = getStoredOdontograms();
-      const key = `${clinicId}_${pacienteId}`;
-      resolve(all[key] || null);
-    }, 300);
-  });
-};
-
-export const saveOdontogram = async (pacienteId, odontogramData, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const all = getStoredOdontograms();
-      const key = `${clinicId}_${pacienteId}`;
-      all[key] = {
-        dientes: odontogramData,
-        clinic_id: String(clinicId),
-        updated_at: new Date().toISOString()
-      };
-      saveStoredOdontograms(all);
-      resolve(all[key]);
-    }, 400); // Simulamos retraso de red
-  });
+  if (existing) {
+    const { data, error } = await supabase
+      .from('odontogramas')
+      .update({ dientes: dientesData, updated_at: new Date().toISOString() })
+      .eq('id', existing.id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  } else {
+    const { data, error } = await supabase
+      .from('odontogramas')
+      .insert([{ paciente_id: patientId, dientes: dientesData, clinic_id: clinicId }])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
 };
