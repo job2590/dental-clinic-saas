@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { getPatientById, createPatient, updatePatient } from '../../services/patientService';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { getSecureUrl } from '../../services/storageService';
 import Swal from 'sweetalert2';
 
 const PacienteForm = () => {
@@ -22,6 +23,7 @@ const PacienteForm = () => {
     celular: '', whatsapp: '', correo: '', contacto_emergencia: '',
     seguro: '', tipo_sangre: '', observaciones: '', foto_url: ''
   });
+  const [previewUrl, setPreviewUrl] = useState('');
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
@@ -30,6 +32,10 @@ const PacienteForm = () => {
         try {
           const data = await getPatientById(id, user.clinic_id);
           setFormData(data);
+          if (data.foto_url) {
+            const signedUrl = await getSecureUrl('patient-photos', data.foto_url);
+            if (signedUrl) setPreviewUrl(signedUrl);
+          }
         } catch (error) {
           console.error(error);
           setError('Paciente no encontrado');
@@ -82,9 +88,11 @@ const PacienteForm = () => {
 
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage.from('patient-photos').getPublicUrl(fileName);
+      // Generar URL firmada temporal para la previsualización
+      const signedUrl = await getSecureUrl('patient-photos', fileName);
       
-      setFormData(prev => ({ ...prev, foto_url: data.publicUrl }));
+      setFormData(prev => ({ ...prev, foto_url: fileName }));
+      if (signedUrl) setPreviewUrl(signedUrl);
       Swal.fire({
         title: '¡Subida!',
         text: 'La foto se ha cargado correctamente',
@@ -154,8 +162,8 @@ const PacienteForm = () => {
               <div className="col-12 col-md-3 text-center">
                 <div className="avatar-upload position-relative d-inline-block">
                   <div className="bg-light text-secondary rounded-circle d-flex flex-column align-items-center justify-content-center border overflow-hidden" style={{width: '120px', height: '120px'}}>
-                    {formData.foto_url ? (
-                       <img src={formData.foto_url} alt="Perfil" className="w-100 h-100 object-fit-cover" />
+                    {previewUrl ? (
+                       <img src={previewUrl} alt="Perfil" className="w-100 h-100 object-fit-cover" />
                     ) : (
                        <><i className="bi bi-camera fs-2"></i><span className="small mt-1">Foto</span></>
                     )}

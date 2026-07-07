@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getPatientById, deletePatient } from '../../services/patientService';
 import { useAuth } from '../../context/AuthContext';
+import { getSecureUrl } from '../../services/storageService';
 
 const PacienteProfile = () => {
   const { user } = useAuth();
@@ -9,12 +10,17 @@ const PacienteProfile = () => {
   const navigate = useNavigate();
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [previewUrl, setPreviewUrl] = useState('');
 
   useEffect(() => {
     const fetchPatient = async () => {
       try {
         const data = await getPatientById(id, user.clinic_id);
         setPatient(data);
+        if (data.foto_url) {
+          const signedUrl = await getSecureUrl('patient-photos', data.foto_url);
+          if (signedUrl) setPreviewUrl(signedUrl);
+        }
       } catch (error) {
         console.error("Paciente no encontrado:", error);
       } finally {
@@ -77,8 +83,8 @@ const PacienteProfile = () => {
             <div className="card-body p-4 text-center">
               <div className="avatar-wrapper mb-4 position-relative d-inline-block">
                 <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex flex-column align-items-center justify-content-center mx-auto border border-4 border-white shadow-sm" style={{width: '140px', height: '140px', fontSize: '3rem'}}>
-                  {patient.foto_url ? (
-                    <img src={patient.foto_url} alt="Perfil" className="w-100 h-100 rounded-circle object-fit-cover" />
+                  {previewUrl ? (
+                    <img src={previewUrl} alt="Perfil" className="w-100 h-100 rounded-circle object-fit-cover" />
                   ) : (
                     patient.nombre.charAt(0)
                   )}

@@ -5,6 +5,7 @@ import { getPatientById } from '../../services/patientService';
 import { getRadiographiesByPatient, createRadiography, deleteRadiography } from '../../services/radiographyService';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { getSecureUrl } from '../../services/storageService';
 
 const IMAGE_TYPES = [
   'Panorámica',
@@ -44,7 +45,12 @@ const RadiografiasPage = () => {
       const pData = await getPatientById(id, user.clinic_id);
       setPatient(pData);
       const imgData = await getRadiographiesByPatient(id, user.clinic_id);
-      setImages(imgData);
+      
+      const secureImages = await Promise.all(imgData.map(async (img) => {
+        const url = await getSecureUrl('radiografias', img.imagen_url);
+        return { ...img, secure_url: url };
+      }));
+      setImages(secureImages);
     } catch (error) {
       console.error(error);
     } finally {
@@ -99,12 +105,10 @@ const RadiografiasPage = () => {
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage.from('radiografias').getPublicUrl(fileName);
-      
       const radiographyData = {
         ...formData,
         paciente_id: id,
-        imagen_url: urlData.publicUrl
+        imagen_url: fileName
       };
 
       await createRadiography(radiographyData, user.clinic_id);
@@ -203,7 +207,7 @@ const RadiografiasPage = () => {
                 <div className="position-relative bg-dark" style={{paddingTop: '75%', overflow: 'hidden'}}>
                   {/* Thumbnail */}
                   <img 
-                    src={img.imagen_url} 
+                    src={img.secure_url} 
                     alt={img.tipo}
                     className="position-absolute top-0 start-0 w-100 h-100"
                     style={{objectFit: 'cover', opacity: 0.9, transition: 'transform 0.3s ease'}}
@@ -262,7 +266,7 @@ const RadiografiasPage = () => {
 
           <div className="w-100 h-100 d-flex justify-content-center align-items-center p-md-5" onClick={() => setPreviewImage(null)}>
             <img 
-              src={previewImage.imagen_url} 
+              src={previewImage.secure_url} 
               alt={previewImage.tipo} 
               className="img-fluid rounded shadow-lg"
               style={{maxHeight: '85vh', maxWidth: '90vw', objectFit: 'contain', animation: 'zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'}}

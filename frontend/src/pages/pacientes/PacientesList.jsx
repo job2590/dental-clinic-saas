@@ -3,6 +3,29 @@ import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { getPatients, deletePatient } from '../../services/patientService';
 import { useAuth } from '../../context/AuthContext';
+import { getSecureUrl } from '../../services/storageService';
+
+const PatientAvatar = ({ patient }) => {
+  const [url, setUrl] = useState('');
+
+  useEffect(() => {
+    if (patient.foto_url) {
+      if (patient.foto_url.startsWith('http')) {
+        setUrl(patient.foto_url);
+      } else {
+        getSecureUrl('patient-photos', patient.foto_url).then(signedUrl => {
+          if (signedUrl) setUrl(signedUrl);
+        });
+      }
+    }
+  }, [patient.foto_url]);
+
+  return url ? (
+    <img src={url} alt="Foto" className="w-100 h-100 rounded-circle object-fit-cover" />
+  ) : (
+    patient.nombre ? patient.nombre.charAt(0) : 'P'
+  );
+};
 
 const PacientesList = () => {
   const { user } = useAuth();
@@ -125,11 +148,7 @@ const PacientesList = () => {
                       <td className="py-3">
                         <div className="d-flex align-items-center">
                           <div className="avatar bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold me-3" style={{width: '40px', height: '40px'}}>
-                            {patient.foto_url ? (
-                              <img src={patient.foto_url} alt="Foto" className="w-100 h-100 rounded-circle object-fit-cover" />
-                            ) : (
-                              patient.nombre ? patient.nombre.charAt(0) : 'P'
-                            )}
+                            <PatientAvatar patient={patient} />
                           </div>
                           <div>
                             <span className="fw-bold text-dark d-block">{patient.nombre} {patient.apellido}</span>
