@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authenticateUser, getClinicById } from '../services/superAdminService';
+﻿import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getClinicById } from '../services/superAdminService';
+// IMPORTANTE: Asegúrate de que esta ruta apunte a tu archivo de configuración de supabase
+import { supabase } from '../services/supabase'; 
 
 const AuthContext = createContext();
 
@@ -14,62 +16,93 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStoredUser = async () => {
-      const storedUser = localStorage.getItem('clinic_user') || sessionStorage.getItem('clinic_user');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
+    // 1. Verificar si ya hay una sesión segura de Supabase guardada
+    const initializeAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await fetchUserAndClinic(session.user.email);
+      } else {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    // 2. Escuchar cambios (login / logout) en tiempo real
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        await fetchUserAndClinic(session.user.email);
+      } else {
+        setUser(null);
+        setClinic(null);
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  // Función interna para buscar el perfil del usuario y su clínica
+  const fetchUserAndClinic = async (email) => {
+    try {
+      const { data: userData, error } = await supabase
+        .from('usuarios')
+        .select('*, roles(nombre)')
+        .eq('email', email)
+        .single();
+
+      if (userData) {
+        const parsedUser = {
+          id: userData.id,
+          email: userData.email,
+          name: userData.nombre,
+          role: userData.roles?.nombre?.toLowerCase() || 'admin',
+          clinic_id: userData.clinic_id,
+          avatar: userData.avatar
+        };
         setUser(parsedUser);
+
+        // Si tiene una clínica asignada, la buscamos
         if (parsedUser.clinic_id) {
           const c = await getClinicById(parsedUser.clinic_id);
           setClinic(c);
+        } else {
+          setClinic(null); // SuperAdmin por defecto no tiene clínica
         }
       }
+    } catch (error) {
+      console.error("Error al obtener usuario o clínica", error);
+    } finally {
       setIsLoading(false);
-    };
-    fetchStoredUser();
-  }, []);
+    }
+  };
 
   const login = async (email, password, rememberMe) => {
     setIsLoading(true);
-    const { user: authUser, error } = await authenticateUser(email, password);
+    
+    // Supabase maneja la persistencia automáticamente de forma segura
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
     
     if (error) {
       setIsLoading(false);
-      return { data: null, error };
-    }
-
-    setUser(authUser);
-    
-    if (authUser.clinic_id) {
-      const c = await getClinicById(authUser.clinic_id);
-      setClinic(c);
-    } else {
-      setClinic(null); // SuperAdmin doesn't have a clinic by default
-    }
-
-    if (rememberMe) {
-      localStorage.setItem('clinic_user', JSON.stringify(authUser));
-    } else {
-      sessionStorage.setItem('clinic_user', JSON.stringify(authUser));
+      return { data: null, error: { message: 'Credenciales inválidas.' } };
     }
     
-    setIsLoading(false);
-    return { data: { user: authUser }, error: null };
+    // Al hacer signIn exitoso, el onAuthStateChange (arriba) detectará el evento
+    // y llamará a fetchUserAndClinic automáticamente.
+    return { data, error: null };
   };
 
   const logout = async () => {
     setIsLoading(true);
-    // TODO: Reemplazar por supabase.auth.signOut()
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        setUser(null);
-        setClinic(null);
-        localStorage.removeItem('clinic_user');
-        sessionStorage.removeItem('clinic_user');
-        setIsLoading(false);
-        resolve({ error: null });
-      }, 400);
-    });
+    await supabase.auth.signOut();
+    // onAuthStateChange limpia el estado automáticamente
+    return { error: null };
   };
 
   const value = {
