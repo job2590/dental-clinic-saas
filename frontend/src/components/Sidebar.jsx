@@ -8,8 +8,12 @@ const Sidebar = ({ isOpen }) => {
   return (
     <aside className={`sidebar bg-white shadow-sm border-end transition-all ${isOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
       <div className="sidebar-brand p-4 d-flex align-items-center border-bottom border-light">
-        <i className={`bi ${user?.role === 'superadmin' ? 'bi-globe' : 'bi-heart-pulse-fill'} text-primary fs-3 me-2`}></i>
-        {isOpen && <span className="fs-5 fw-bold text-nowrap text-dark">{user?.role === 'superadmin' ? 'SaaS Admin' : (clinic?.nombre || 'Clinic Amanecer')}</span>}
+        {clinic?.logo && user?.role !== 'superadmin' ? (
+          <img src={clinic.logo} alt="Logo" className="rounded-circle me-2 object-fit-cover shadow-sm" style={{width: '32px', height: '32px'}} />
+        ) : (
+          <i className={`bi ${user?.role === 'superadmin' ? 'bi-globe' : 'bi-heart-pulse-fill'} text-primary fs-3 me-2`}></i>
+        )}
+        {isOpen && <span className="fs-5 fw-bold text-nowrap text-dark text-truncate" style={{maxWidth: '180px'}}>{user?.role === 'superadmin' ? 'SaaS Admin' : (clinic?.nombre || 'Clinic Amanecer')}</span>}
       </div>
       
       <ul className="nav flex-column mt-3 px-3">
