@@ -34,13 +34,22 @@ export const getPatientById = async (id, clinicId) => {
   return data;
 };
 
+const cleanDataForDB = (data) => {
+  const cleaned = {};
+  for (const [key, value] of Object.entries(data)) {
+    cleaned[key] = value === '' ? null : value;
+  }
+  return cleaned;
+};
+
 export const createPatient = async (patientData, clinicId) => {
   const codigo = await generateCode(clinicId);
+  const cleanedData = cleanDataForDB(patientData);
   
   const { data, error } = await supabase
     .from('pacientes')
     .insert([{
-      ...patientData,
+      ...cleanedData,
       clinic_id: clinicId,
       codigo
     }])
@@ -53,11 +62,12 @@ export const createPatient = async (patientData, clinicId) => {
 
 export const updatePatient = async (id, patientData, clinicId) => {
   // No enviar campos que no deben actualizarse
-  const { id: _, clinic_id: __, created_at: ___, ...cleanData } = patientData;
+  const { id: _, clinic_id: __, created_at: ___, fecha_registro: ____, ...restData } = patientData;
+  const cleanedData = cleanDataForDB(restData);
   
   const { data, error } = await supabase
     .from('pacientes')
-    .update(cleanData)
+    .update(cleanedData)
     .eq('id', id)
     .eq('clinic_id', clinicId)
     .select()
