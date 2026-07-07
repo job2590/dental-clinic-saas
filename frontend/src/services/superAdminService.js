@@ -111,58 +111,57 @@ export const getUsersByClinic = async (clinicId) => {
 };
 
 export const createUser = async (userData) => {
-  // 1. Crear usuario en Supabase Auth
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email: userData.email,
-    password: userData.password
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("No autenticado");
+
+  const response = await fetch('/api/createUser', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`
+    },
+    body: JSON.stringify(userData)
   });
 
-  if (authError) throw authError;
-
-  // 2. Buscar ID del rol
-  const roleName = userData.role === 'superadmin' ? 'SuperAdmin' : 
-                   userData.role === 'odontologo' ? 'Odontologo' : 'Admin';
-  const { data: role } = await supabase.from('roles').select('id').eq('nombre', roleName).single();
-  
-  // 3. Crear perfil en nuestra tabla usuarios
-  const { data, error } = await supabase
-    .from('usuarios')
-    .insert([{
-      id: authData.user.id,
-      clinic_id: userData.clinic_id,
-      rol_id: role.id,
-      nombre: userData.name,
-      email: userData.email,
-      activo: true
-    }])
-    .select('*, roles(nombre)')
-    .single();
-    
-  if (error) throw error;
-  return { ...data, role: data.roles?.nombre?.toLowerCase() };
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Error al crear usuario');
+  return data.user;
 };
 
 export const updateUser = async (id, userData) => {
-  const updates = {};
-  if (userData.name) updates.nombre = userData.name;
-  if (userData.email) updates.email = userData.email;
-  if (userData.avatar !== undefined) updates.avatar = userData.avatar;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("No autenticado");
 
-  const { data, error } = await supabase
-    .from('usuarios')
-    .update(updates)
-    .eq('id', id)
-    .select('*, roles(nombre)')
-    .single();
+  const response = await fetch('/api/updateUser', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`
+    },
+    body: JSON.stringify({ id, ...userData })
+  });
 
-  if (error) throw error;
-  return { ...data, role: data.roles?.nombre?.toLowerCase() };
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Error al actualizar usuario');
+  return data.user;
 };
 
 export const deleteUser = async (id) => {
-  const { error } = await supabase.from('usuarios').delete().eq('id', id);
-  if (error) throw error;
-  return true;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("No autenticado");
+
+  const response = await fetch('/api/deleteUser', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`
+    },
+    body: JSON.stringify({ id })
+  });
+
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Error al eliminar usuario');
+  return data.success;
 };
 
 // --- Stats ---
