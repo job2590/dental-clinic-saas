@@ -89,6 +89,7 @@ export const AuthProvider = ({ children }) => {
     });
     
     if (error) {
+      console.error("Supabase Auth Login Error:", error);
       setIsLoading(false);
       return { data: null, error: { message: 'Credenciales inválidas.' } };
     }
