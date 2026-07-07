@@ -20,7 +20,7 @@ export const authenticateUser = async (email, password) => {
         id: user.id,
         email: user.email,
         name: user.nombre,
-        role: user.roles.nombre.toLowerCase(), // 'superadmin', 'admin', etc.
+        role: user.roles?.nombre?.toLowerCase() || 'admin',
         clinic_id: user.clinic_id,
         avatar: user.avatar
       } 

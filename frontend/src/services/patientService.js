@@ -1,95 +1,79 @@
-const STORAGE_KEY = 'clinic_patients';
+import { supabase } from '../lib/supabase';
 
-const getStoredPatients = () => {
-  const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : [];
-};
-
-const saveStoredPatients = (patients) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(patients));
-};
-
-// Generar código estilo PAC-0001
-const generateCode = (currentCount) => {
-  const nextNum = currentCount + 1;
+const generateCode = async (clinicId) => {
+  const { count } = await supabase
+    .from('pacientes')
+    .select('*', { count: 'exact', head: true })
+    .eq('clinic_id', clinicId);
+    
+  const nextNum = (count || 0) + 1;
   return `PAC-${String(nextNum).padStart(4, '0')}`;
 };
 
 export const getPatients = async (clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const all = getStoredPatients();
-      resolve(all.filter(p => p.clinic_id === String(clinicId)));
-    }, 300);
-  });
+  if (!clinicId) return [];
+  const { data, error } = await supabase
+    .from('pacientes')
+    .select('*')
+    .eq('clinic_id', clinicId)
+    .order('created_at', { ascending: false });
+
+  if (error) { console.error('getPatients error:', error); throw error; }
+  return data || [];
 };
 
 export const getPatientById = async (id, clinicId) => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const patients = getStoredPatients();
-      const patient = patients.find(p => p.id === String(id) && p.clinic_id === String(clinicId));
-      if (patient) {
-        resolve(patient);
-      } else {
-        reject(new Error('Paciente no encontrado'));
-      }
-    }, 300);
-  });
+  const { data, error } = await supabase
+    .from('pacientes')
+    .select('*')
+    .eq('id', id)
+    .eq('clinic_id', clinicId)
+    .single();
+
+  if (error || !data) throw new Error('Paciente no encontrado');
+  return data;
 };
 
 export const createPatient = async (patientData, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const patients = getStoredPatients();
-      const clinicPatients = patients.filter(p => p.clinic_id === String(clinicId));
-      const newPatient = {
-        ...patientData,
-        id: Date.now().toString(),
-        clinic_id: String(clinicId),
-        codigo: generateCode(clinicPatients.length),
-        fecha_registro: new Date().toISOString(),
-      };
-      patients.unshift(newPatient); // Agregar al inicio
-      saveStoredPatients(patients);
-      resolve(newPatient);
-    }, 500);
-  });
+  const codigo = await generateCode(clinicId);
+  
+  const { data, error } = await supabase
+    .from('pacientes')
+    .insert([{
+      ...patientData,
+      clinic_id: clinicId,
+      codigo
+    }])
+    .select()
+    .single();
+
+  if (error) { console.error('createPatient error:', error); throw error; }
+  return data;
 };
 
 export const updatePatient = async (id, patientData, clinicId) => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const patients = getStoredPatients();
-      const index = patients.findIndex(p => p.id === String(id) && p.clinic_id === String(clinicId));
-      
-      if (index !== -1) {
-        // Mantener id, codigo y fecha_registro originales
-        const originalPatient = patients[index];
-        patients[index] = {
-          ...originalPatient,
-          ...patientData,
-          id: originalPatient.id,
-          clinic_id: originalPatient.clinic_id,
-          codigo: originalPatient.codigo,
-          fecha_registro: originalPatient.fecha_registro
-        };
-        saveStoredPatients(patients);
-        resolve(patients[index]);
-      } else {
-        reject(new Error('Paciente no encontrado'));
-      }
-    }, 500);
-  });
+  // No enviar campos que no deben actualizarse
+  const { id: _, clinic_id: __, created_at: ___, ...cleanData } = patientData;
+  
+  const { data, error } = await supabase
+    .from('pacientes')
+    .update(cleanData)
+    .eq('id', id)
+    .eq('clinic_id', clinicId)
+    .select()
+    .single();
+
+  if (error) { console.error('updatePatient error:', error); throw error; }
+  return data;
 };
 
 export const deletePatient = async (id, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const patients = getStoredPatients();
-      const filtered = patients.filter(p => !(p.id === String(id) && p.clinic_id === String(clinicId)));
-      saveStoredPatients(filtered);
-      resolve(true);
-    }, 400);
-  });
+  const { error } = await supabase
+    .from('pacientes')
+    .delete()
+    .eq('id', id)
+    .eq('clinic_id', clinicId);
+
+  if (error) { console.error('deletePatient error:', error); throw error; }
+  return true;
 };

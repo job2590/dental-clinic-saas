@@ -1,65 +1,50 @@
-const STORAGE_KEY = 'clinic_treatments';
-
-const getStoredTreatments = () => {
-  const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : [];
-};
-
-const saveStoredTreatments = (treatments) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(treatments));
-};
+import { supabase } from '../lib/supabase';
 
 export const getTreatmentsByPatient = async (pacienteId, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const all = getStoredTreatments();
-      resolve(all.filter(t => t.paciente_id === String(pacienteId) && t.clinic_id === String(clinicId)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)));
-    }, 300);
-  });
+  const { data, error } = await supabase
+    .from('tratamientos')
+    .select('*')
+    .eq('paciente_id', pacienteId)
+    .eq('clinic_id', clinicId)
+    .order('created_at', { ascending: false });
+
+  if (error) { console.error('getTreatmentsByPatient error:', error); throw error; }
+  return data || [];
 };
 
 export const createTreatment = async (pacienteId, treatmentData, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const all = getStoredTreatments();
-      const newTreatment = {
-        ...treatmentData,
-        id: Date.now().toString(),
-        paciente_id: String(pacienteId),
-        clinic_id: String(clinicId),
-        fecha_registro: new Date().toISOString()
-      };
-      all.unshift(newTreatment);
-      saveStoredTreatments(all);
-      resolve(newTreatment);
-    }, 400);
-  });
+  const { data, error } = await supabase
+    .from('tratamientos')
+    .insert([{ ...treatmentData, paciente_id: pacienteId, clinic_id: clinicId }])
+    .select()
+    .single();
+
+  if (error) { console.error('createTreatment error:', error); throw error; }
+  return data;
 };
 
 export const updateTreatment = async (id, treatmentData, clinicId) => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const all = getStoredTreatments();
-      const index = all.findIndex(t => t.id === String(id) && t.clinic_id === String(clinicId));
-      
-      if (index !== -1) {
-        all[index] = { ...all[index], ...treatmentData, clinic_id: String(clinicId) };
-        saveStoredTreatments(all);
-        resolve(all[index]);
-      } else {
-        reject(new Error('Tratamiento no encontrado'));
-      }
-    }, 400);
-  });
+  const { id: _, clinic_id: __, paciente_id: ___, created_at: ____, ...cleanData } = treatmentData;
+
+  const { data, error } = await supabase
+    .from('tratamientos')
+    .update(cleanData)
+    .eq('id', id)
+    .eq('clinic_id', clinicId)
+    .select()
+    .single();
+
+  if (error) { console.error('updateTreatment error:', error); throw error; }
+  return data;
 };
 
 export const deleteTreatment = async (id, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const all = getStoredTreatments();
-      const filtered = all.filter(t => !(t.id === String(id) && t.clinic_id === String(clinicId)));
-      saveStoredTreatments(filtered);
-      resolve(true);
-    }, 300);
-  });
+  const { error } = await supabase
+    .from('tratamientos')
+    .delete()
+    .eq('id', id)
+    .eq('clinic_id', clinicId);
+
+  if (error) throw error;
+  return true;
 };

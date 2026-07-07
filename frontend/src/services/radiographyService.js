@@ -1,48 +1,36 @@
-const STORAGE_KEY = 'clinic_radiographies';
+import { supabase } from '../lib/supabase';
 
-const getStoredRadiographies = () => {
-  const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : [];
+export const getRadiographiesByPatient = async (patientId, clinicId) => {
+  const { data, error } = await supabase
+    .from('radiografias')
+    .select('*')
+    .eq('paciente_id', patientId)
+    .eq('clinic_id', clinicId)
+    .order('fecha', { ascending: false });
+
+  if (error) { console.error('getRadiographiesByPatient error:', error); throw error; }
+  return data || [];
 };
 
-const saveStoredRadiographies = (radiographies) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(radiographies));
-};
+export const createRadiography = async (radiographyData, clinicId) => {
+  // radiographyData debe incluir paciente_id, tipo, fecha, notas, imagen_url
+  const { data, error } = await supabase
+    .from('radiografias')
+    .insert([{ ...radiographyData, clinic_id: clinicId }])
+    .select()
+    .single();
 
-export const getRadiographiesByPatient = async (pacienteId, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const all = getStoredRadiographies();
-      resolve(all.filter(r => r.paciente_id === String(pacienteId) && r.clinic_id === String(clinicId)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)));
-    }, 300);
-  });
-};
-
-export const createRadiography = async (pacienteId, radiographyData, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const all = getStoredRadiographies();
-      const newRad = {
-        ...radiographyData,
-        id: Date.now().toString(),
-        paciente_id: String(pacienteId),
-        clinic_id: String(clinicId),
-        fecha_registro: new Date().toISOString()
-      };
-      all.unshift(newRad);
-      saveStoredRadiographies(all);
-      resolve(newRad);
-    }, 400);
-  });
+  if (error) { console.error('createRadiography error:', error); throw error; }
+  return data;
 };
 
 export const deleteRadiography = async (id, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const all = getStoredRadiographies();
-      const filtered = all.filter(r => !(r.id === String(id) && r.clinic_id === String(clinicId)));
-      saveStoredRadiographies(filtered);
-      resolve(true);
-    }, 300);
-  });
+  const { error } = await supabase
+    .from('radiografias')
+    .delete()
+    .eq('id', id)
+    .eq('clinic_id', clinicId);
+
+  if (error) throw error;
+  return true;
 };

@@ -1,57 +1,47 @@
-const STORAGE_KEY = 'clinic_payments';
-
-const getStoredPayments = () => {
-  const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : [];
-};
-
-const saveStoredPayments = (payments) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payments));
-};
+import { supabase } from '../lib/supabase';
 
 export const getPaymentsByPatient = async (pacienteId, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const all = getStoredPayments();
-      resolve(all.filter(p => p.paciente_id === String(pacienteId) && p.clinic_id === String(clinicId)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)));
-    }, 300);
-  });
+  const { data, error } = await supabase
+    .from('pagos')
+    .select('*')
+    .eq('paciente_id', pacienteId)
+    .eq('clinic_id', clinicId)
+    .order('created_at', { ascending: false });
+
+  if (error) { console.error('getPaymentsByPatient error:', error); throw error; }
+  return data || [];
 };
 
 export const getAllPayments = async (clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const all = getStoredPayments();
-      resolve(all.filter(p => p.clinic_id === String(clinicId)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)));
-    }, 300);
-  });
+  if (!clinicId) return [];
+  const { data, error } = await supabase
+    .from('pagos')
+    .select('*')
+    .eq('clinic_id', clinicId)
+    .order('created_at', { ascending: false });
+
+  if (error) { console.error('getAllPayments error:', error); throw error; }
+  return data || [];
 };
 
 export const createPayment = async (pacienteId, paymentData, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const all = getStoredPayments();
-      const newPayment = {
-        ...paymentData,
-        id: Date.now().toString(),
-        paciente_id: String(pacienteId),
-        clinic_id: String(clinicId),
-        fecha_registro: new Date().toISOString()
-      };
-      all.unshift(newPayment);
-      saveStoredPayments(all);
-      resolve(newPayment);
-    }, 400);
-  });
+  const { data, error } = await supabase
+    .from('pagos')
+    .insert([{ ...paymentData, paciente_id: pacienteId, clinic_id: clinicId }])
+    .select()
+    .single();
+
+  if (error) { console.error('createPayment error:', error); throw error; }
+  return data;
 };
 
 export const deletePayment = async (id, clinicId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const all = getStoredPayments();
-      const filtered = all.filter(p => !(p.id === String(id) && p.clinic_id === String(clinicId)));
-      saveStoredPayments(filtered);
-      resolve(true);
-    }, 300);
-  });
+  const { error } = await supabase
+    .from('pagos')
+    .delete()
+    .eq('id', id)
+    .eq('clinic_id', clinicId);
+
+  if (error) throw error;
+  return true;
 };

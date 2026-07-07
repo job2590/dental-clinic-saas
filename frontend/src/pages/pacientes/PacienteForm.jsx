@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { getPatientById, createPatient, updatePatient } from '../../services/patientService';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
+import Swal from 'sweetalert2';
 
 const PacienteForm = () => {
   const { user } = useAuth();
@@ -18,8 +20,9 @@ const PacienteForm = () => {
     sexo: '', estado_civil: '', profesion: '',
     direccion: '', ciudad: '', departamento: '',
     celular: '', whatsapp: '', correo: '', contacto_emergencia: '',
-    seguro: '', tipo_sangre: '', observaciones: '', foto: ''
+    seguro: '', tipo_sangre: '', observaciones: '', foto_url: ''
   });
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (isEditMode) {
@@ -59,6 +62,43 @@ const PacienteForm = () => {
       setFormData(prev => ({ ...prev, [name]: value, edad: computedAge }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handlePhotoUpload = async (e) => {
+    try {
+      if (!e.target.files || e.target.files.length === 0) return;
+      const file = e.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      // Usar un ID temporal si es nuevo paciente, o su ID real si existe
+      const filePrefix = id || `temp_${Date.now()}`;
+      const fileName = `${user.clinic_id}_${filePrefix}_${Date.now()}.${fileExt}`;
+      
+      setUploading(true);
+
+      const { error: uploadError } = await supabase.storage
+        .from('patient-photos')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('patient-photos').getPublicUrl(fileName);
+      
+      setFormData(prev => ({ ...prev, foto_url: data.publicUrl }));
+      Swal.fire({
+        title: '¡Subida!',
+        text: 'La foto se ha cargado correctamente',
+        icon: 'success',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000
+      });
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      Swal.fire('Error', 'No se pudo subir la imagen', 'error');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -113,17 +153,19 @@ const PacienteForm = () => {
             <div className="row g-4 mb-4 align-items-end">
               <div className="col-12 col-md-3 text-center">
                 <div className="avatar-upload position-relative d-inline-block">
-                  <div className="bg-light text-secondary rounded-circle d-flex flex-column align-items-center justify-content-center border" style={{width: '120px', height: '120px', borderStyle: 'dashed !important'}}>
-                    {formData.foto ? (
-                       <img src={formData.foto} alt="Perfil" className="w-100 h-100 rounded-circle object-fit-cover" />
+                  <div className="bg-light text-secondary rounded-circle d-flex flex-column align-items-center justify-content-center border overflow-hidden" style={{width: '120px', height: '120px'}}>
+                    {formData.foto_url ? (
+                       <img src={formData.foto_url} alt="Perfil" className="w-100 h-100 object-fit-cover" />
                     ) : (
                        <><i className="bi bi-camera fs-2"></i><span className="small mt-1">Foto</span></>
                     )}
                   </div>
-                  <button type="button" className="btn btn-sm btn-primary rounded-circle position-absolute bottom-0 end-0 shadow" style={{width:'32px', height:'32px'}} title="Subir foto">
-                    <i className="bi bi-pencil-fill"></i>
-                  </button>
+                  <label htmlFor="patientPhotoUpload" className="btn btn-sm btn-primary rounded-circle position-absolute bottom-0 end-0 shadow d-flex align-items-center justify-content-center cursor-pointer" style={{width:'32px', height:'32px'}} title="Subir foto">
+                    {uploading ? <span className="spinner-border spinner-border-sm" /> : <i className="bi bi-pencil-fill"></i>}
+                    <input type="file" id="patientPhotoUpload" className="d-none" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} />
+                  </label>
                 </div>
+                {uploading && <small className="text-primary mt-2 d-block">Subiendo...</small>}
               </div>
               <div className="col-12 col-md-9">
                 <div className="row g-3">

@@ -125,8 +125,8 @@ const PacientesList = () => {
                       <td className="py-3">
                         <div className="d-flex align-items-center">
                           <div className="avatar bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold me-3" style={{width: '40px', height: '40px'}}>
-                            {patient.foto ? (
-                              <img src={patient.foto} alt="Foto" className="w-100 h-100 rounded-circle object-fit-cover" />
+                            {patient.foto_url ? (
+                              <img src={patient.foto_url} alt="Foto" className="w-100 h-100 rounded-circle object-fit-cover" />
                             ) : (
                               patient.nombre ? patient.nombre.charAt(0) : 'P'
                             )}
