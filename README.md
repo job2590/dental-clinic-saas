@@ -17,57 +17,13 @@ Dental Clinic Amanecer es una avanzada plataforma SaaS (Software as a Service) M
 * **Backend:** Node.js (Próximamente), Supabase (Autenticación y Base de Datos PostgreSQL).
 * **Despliegue:** Preparado para Vercel (Frontend) y Render (Backend).
 
-## 🚀 Instalación y Desarrollo Local
-
-### Prerrequisitos
-Asegúrate de tener instalado [Node.js](https://nodejs.org/) (versión 16+ recomendada).
-
-### Pasos
-1. Clona este repositorio:
-   ```bash
-   git clone https://github.com/tu-usuario/dental-clinic-amanecer.git
-   cd dental-clinic-amanecer
-   ```
-
-2. Instala las dependencias del frontend:
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-3. Inicia el servidor de desarrollo:
-   ```bash
-   npm run dev
-   ```
-
-4. Abre tu navegador en `http://localhost:5173`.
-
-### Credenciales de Prueba (Entorno de Desarrollo)
-En modo desarrollo, el sistema simula la base de datos mediante `localStorage`. Puedes ingresar con los siguientes usuarios de prueba:
-
-* **SuperAdmin (Panel Global SaaS):**
-  * Correo: `superadmin@saas.com`
-  * Contraseña: `admin`
-* **Administrador de Clínica (Panel Médico):**
-  * Correo: `admin@clinica.com`
-  * Contraseña: `admin`
-
 ## 📁 Estructura del Proyecto
 
 ```
 dental-clinic-amanecer/
-├── frontend/
-│   ├── public/             # Archivos estáticos
-│   ├── src/
-│   │   ├── components/     # Componentes reutilizables (Sidebar, Layout, Odontograma...)
-│   │   ├── context/        # Contextos globales (AuthContext)
-│   │   ├── pages/          # Vistas principales separadas por módulos
-│   │   └── services/       # Lógica de datos y llamadas a la API (Mock de BD)
-│   ├── index.html
-│   ├── package.json
-│   └── vite.config.js
-├── backend/                # Lógica del servidor (En desarrollo)
-└── database/               # Scripts y esquemas SQL (Supabase)
+├── frontend/               # Código del Cliente SaaS
+├── backend/                # Lógica del servidor
+└── database/               # Esquemas SQL
 ```
 
 ## 📄 Licencia
