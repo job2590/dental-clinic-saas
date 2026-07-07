@@ -246,3 +246,16 @@ html, body, .card, .navbar, .sidebar, .btn, .alert {
 [data-bs-theme="dark"] .swal2-html-container {
   color: #adb5bd;
 }
+
+/* ====== PRINT STYLES ====== */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  body {
+    background-color: white !important;
+  }
+}
+
