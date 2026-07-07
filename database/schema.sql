@@ -1,42 +1,60 @@
 -- ==============================================================================
--- Dental Clinic Amanecer - PostgreSQL Database Schema
--- Preparado para integrarse con Supabase
+-- Dental Clinic Amanecer SaaS - PostgreSQL Database Schema (Supabase)
 -- ==============================================================================
 
--- Habilitar extensión para generar UUIDs (si se manejan fuera de Supabase Auth)
+-- Habilitar extensión para UUIDs
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ==============================================================================
--- 1. USUARIOS Y ROLES
+-- 1. SaaS GLOBAL: Clínicas y Usuarios Administradores
 -- ==============================================================================
+
+CREATE TABLE clinics (
+    id SERIAL PRIMARY KEY,
+    uuid UUID DEFAULT uuid_generate_v4() UNIQUE,
+    nombre VARCHAR(255) NOT NULL,
+    direccion TEXT,
+    telefono VARCHAR(50),
+    correo VARCHAR(255),
+    plan VARCHAR(50) DEFAULT 'Básico',
+    estado VARCHAR(50) DEFAULT 'Activo',
+    fecha_registro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    logo TEXT,
+    color_principal VARCHAR(20) DEFAULT '#0d6efd'
+);
 
 CREATE TABLE roles (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(50) NOT NULL UNIQUE,
-    descripcion TEXT,
+    descripcion TEXT
+);
+
+INSERT INTO roles (nombre, descripcion) VALUES 
+('SuperAdmin', 'Administrador Global del SaaS'),
+('Admin', 'Administrador de una clínica'),
+('Odontologo', 'Médico odontólogo de una clínica');
+
+CREATE TABLE usuarios (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    clinic_id INT REFERENCES clinics(id) ON DELETE CASCADE, -- NULL si es SuperAdmin
+    rol_id INT NOT NULL REFERENCES roles(id),
+    nombre VARCHAR(100) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL, -- En producción debe estar en auth.users, pero mantenemos simpleza
+    telefono VARCHAR(20),
+    avatar TEXT,
+    activo BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Se asume el id como UUID para enlazarse con auth.users en Supabase
-CREATE TABLE usuarios (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    rol_id INT NOT NULL REFERENCES roles(id) ON DELETE RESTRICT,
-    nombre VARCHAR(100) NOT NULL,
-    apellidos VARCHAR(100) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    telefono VARCHAR(20),
-    activo BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
 -- ==============================================================================
--- 2. PACIENTES Y GESTIÓN CLÍNICA
+-- 2. PACIENTES Y GESTIÓN CLÍNICA (Multi-Tenant)
 -- ==============================================================================
 
 CREATE TABLE pacientes (
     id SERIAL PRIMARY KEY,
-    documento_identidad VARCHAR(50) NOT NULL UNIQUE,
+    clinic_id INT NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    documento_identidad VARCHAR(50) NOT NULL,
     nombre VARCHAR(100) NOT NULL,
     apellidos VARCHAR(100) NOT NULL,
     fecha_nacimiento DATE NOT NULL,
@@ -46,29 +64,29 @@ CREATE TABLE pacientes (
     direccion TEXT,
     alergias TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    UNIQUE(clinic_id, documento_identidad)
 );
 
 CREATE TABLE historias_clinicas (
     id SERIAL PRIMARY KEY,
+    clinic_id INT NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
     paciente_id INT NOT NULL UNIQUE REFERENCES pacientes(id) ON DELETE CASCADE,
     antecedentes_medicos TEXT,
     antecedentes_familiares TEXT,
     medicacion_actual TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE citas (
     id SERIAL PRIMARY KEY,
+    clinic_id INT NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
     paciente_id INT NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
-    odontologo_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
+    odontologo_id UUID REFERENCES usuarios(id),
     fecha_hora TIMESTAMP WITH TIME ZONE NOT NULL,
     duracion_minutos INT DEFAULT 30,
     estado VARCHAR(20) DEFAULT 'Pendiente', -- Pendiente, Confirmada, Completada, Cancelada
     motivo TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ==============================================================================
@@ -77,124 +95,52 @@ CREATE TABLE citas (
 
 CREATE TABLE tratamientos (
     id SERIAL PRIMARY KEY,
+    clinic_id INT NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
     historia_clinica_id INT NOT NULL REFERENCES historias_clinicas(id) ON DELETE CASCADE,
-    odontologo_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
+    odontologo_id UUID REFERENCES usuarios(id),
     descripcion TEXT NOT NULL,
     costo_total NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
-    estado VARCHAR(30) DEFAULT 'Planificado', -- Planificado, En progreso, Finalizado, Cancelado
+    estado VARCHAR(30) DEFAULT 'Planificado', 
     fecha_inicio DATE DEFAULT CURRENT_DATE,
     fecha_fin DATE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE pagos (
     id SERIAL PRIMARY KEY,
+    clinic_id INT NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
     tratamiento_id INT NOT NULL REFERENCES tratamientos(id) ON DELETE CASCADE,
     monto NUMERIC(10, 2) NOT NULL,
     fecha_pago TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    metodo_pago VARCHAR(50) NOT NULL, -- Efectivo, Tarjeta, Transferencia
-    referencia VARCHAR(100),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    metodo_pago VARCHAR(50) NOT NULL,
+    referencia VARCHAR(100)
 );
 
 -- ==============================================================================
--- 4. MÓDULOS DE ESPECIALIDADES
+-- 4. ODONTOGRAMA
 -- ==============================================================================
 
 CREATE TABLE odontogramas (
     id SERIAL PRIMARY KEY,
-    paciente_id INT NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
-    diente_numero INT NOT NULL,
-    estado_diente VARCHAR(50) NOT NULL, -- Caries, Sano, Ausente, Obturado, etc.
-    observaciones TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE imagenes (
-    id SERIAL PRIMARY KEY,
-    paciente_id INT NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
-    url_imagen TEXT NOT NULL,
-    tipo VARCHAR(50), -- Foto clínica, Extraoral, Intraoral
-    descripcion TEXT,
-    fecha_captura DATE DEFAULT CURRENT_DATE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE radiografias (
-    id SERIAL PRIMARY KEY,
-    paciente_id INT NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
-    url_archivo TEXT NOT NULL,
-    tipo VARCHAR(50), -- Panorámica, Periapical, Cefalométrica
-    observaciones TEXT,
-    fecha_toma DATE DEFAULT CURRENT_DATE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE implantes (
-    id SERIAL PRIMARY KEY,
-    tratamiento_id INT NOT NULL REFERENCES tratamientos(id) ON DELETE CASCADE,
-    diente_numero INT NOT NULL,
-    marca_implante VARCHAR(100),
-    dimensiones VARCHAR(50),
-    fecha_cirugia DATE,
-    estado_integracion VARCHAR(50),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE ortodoncia (
-    id SERIAL PRIMARY KEY,
-    tratamiento_id INT NOT NULL REFERENCES tratamientos(id) ON DELETE CASCADE,
-    tipo_brackets VARCHAR(50), -- Metálicos, Zafiro, Invisibles
-    fase_actual VARCHAR(100),
-    proxima_revision DATE,
-    observaciones TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE periodoncia (
-    id SERIAL PRIMARY KEY,
-    tratamiento_id INT NOT NULL REFERENCES tratamientos(id) ON DELETE CASCADE,
-    profundidad_bolsas VARCHAR(255),
-    sangrado BOOLEAN DEFAULT FALSE,
-    movilidad_dental VARCHAR(50),
-    diagnostico TEXT,
-    observaciones TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE endodoncia (
-    id SERIAL PRIMARY KEY,
-    tratamiento_id INT NOT NULL REFERENCES tratamientos(id) ON DELETE CASCADE,
-    diente_numero INT NOT NULL,
-    conductos_tratados INT,
-    longitud_trabajo VARCHAR(50),
-    material_obturacion VARCHAR(100),
-    observaciones TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE protesis (
-    id SERIAL PRIMARY KEY,
-    tratamiento_id INT NOT NULL REFERENCES tratamientos(id) ON DELETE CASCADE,
-    tipo_protesis VARCHAR(50), -- Fija, Removible, Total
-    material VARCHAR(100),
-    dientes_involucrados VARCHAR(100),
-    fecha_impresion DATE,
-    fecha_instalacion DATE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    clinic_id INT NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    paciente_id INT NOT NULL UNIQUE REFERENCES pacientes(id) ON DELETE CASCADE,
+    dientes JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ==============================================================================
--- 5. ÍNDICES (Optimización de consultas)
+-- 5. ÍNDICES (Para consultas rápidas multi-tenant)
 -- ==============================================================================
 
-CREATE INDEX idx_usuarios_email ON usuarios(email);
-CREATE INDEX idx_pacientes_doc ON pacientes(documento_identidad);
-CREATE INDEX idx_pacientes_nombre ON pacientes(apellidos, nombre);
-CREATE INDEX idx_citas_fecha ON citas(fecha_hora);
-CREATE INDEX idx_citas_paciente ON citas(paciente_id);
-CREATE INDEX idx_citas_odontologo ON citas(odontologo_id);
-CREATE INDEX idx_tratamientos_hc ON tratamientos(historia_clinica_id);
-CREATE INDEX idx_pagos_tratamiento ON pagos(tratamiento_id);
-CREATE INDEX idx_odontogramas_paciente ON odontogramas(paciente_id);
+CREATE INDEX idx_usuarios_clinic ON usuarios(clinic_id);
+CREATE INDEX idx_pacientes_clinic ON pacientes(clinic_id);
+CREATE INDEX idx_citas_clinic ON citas(clinic_id);
+CREATE INDEX idx_tratamientos_clinic ON tratamientos(clinic_id);
+CREATE INDEX idx_pagos_clinic ON pagos(clinic_id);
+CREATE INDEX idx_odontogramas_clinic ON odontogramas(clinic_id);
+
+-- ==============================================================================
+-- INSERCIÓN DE DATOS INICIALES (SUPER ADMIN)
+-- ==============================================================================
+INSERT INTO usuarios (rol_id, nombre, email, password, activo) 
+VALUES (1, 'Super Admin', 'superadmin@saas.com', 'admin', true);
