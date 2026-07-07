@@ -4,24 +4,24 @@ export const getAppointments = async (clinicId) => {
   if (!clinicId) return [];
   const { data, error } = await supabase
     .from('citas')
-    .select('*, pacientes(nombre, apellidos), usuarios(nombre)')
+    .select('*, pacientes(nombre, apellido)')
     .eq('clinic_id', clinicId)
-    .order('fecha_hora', { ascending: true });
+    .order('start', { ascending: true });
 
-  if (error) throw error;
-  return data;
+  if (error) { console.error('getAppointments error:', error); throw error; }
+  return data || [];
 };
 
 export const getAppointmentsByPatient = async (patientId, clinicId) => {
   const { data, error } = await supabase
     .from('citas')
-    .select('*, usuarios(nombre)')
+    .select('*')
     .eq('paciente_id', patientId)
     .eq('clinic_id', clinicId)
-    .order('fecha_hora', { ascending: true });
+    .order('start', { ascending: true });
 
   if (error) throw error;
-  return data;
+  return data || [];
 };
 
 export const createAppointment = async (appointmentData, clinicId) => {
@@ -31,20 +31,22 @@ export const createAppointment = async (appointmentData, clinicId) => {
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) { console.error('createAppointment error:', error); throw error; }
   return data;
 };
 
 export const updateAppointment = async (id, appointmentData, clinicId) => {
+  const { id: _, clinic_id: __, created_at: ___, ...cleanData } = appointmentData;
+  
   const { data, error } = await supabase
     .from('citas')
-    .update(appointmentData)
+    .update(cleanData)
     .eq('id', id)
     .eq('clinic_id', clinicId)
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) { console.error('updateAppointment error:', error); throw error; }
   return data;
 };
 

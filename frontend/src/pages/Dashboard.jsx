@@ -79,8 +79,10 @@ const Dashboard = () => {
       }
     };
 
-    fetchDashboardData();
-  }, []);
+    if (user?.clinic_id) {
+      fetchDashboardData();
+    }
+  }, [user?.clinic_id]);
 
   const chartOptions = {
     responsive: true,

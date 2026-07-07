@@ -8,31 +8,35 @@ export const getClinicalHistory = async (pacienteId, clinicId) => {
     .eq('clinic_id', clinicId)
     .single();
 
-  if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found"
+  if (error && error.code !== 'PGRST116') {
+    console.error('getClinicalHistory error:', error);
     throw error;
   }
   return data || null;
 };
 
 export const saveClinicalHistory = async (pacienteId, historyData, clinicId) => {
+  // Limpiar campos que no deben ir al insert/update
+  const { id: _, clinic_id: __, paciente_id: ___, created_at: ____, ...cleanData } = historyData;
+
   const existing = await getClinicalHistory(pacienteId, clinicId);
 
   if (existing) {
     const { data, error } = await supabase
       .from('historias_clinicas')
-      .update(historyData)
+      .update(cleanData)
       .eq('id', existing.id)
       .select()
       .single();
-    if (error) throw error;
+    if (error) { console.error('saveClinicalHistory update error:', error); throw error; }
     return data;
   } else {
     const { data, error } = await supabase
       .from('historias_clinicas')
-      .insert([{ ...historyData, paciente_id: pacienteId, clinic_id: clinicId }])
+      .insert([{ ...cleanData, paciente_id: pacienteId, clinic_id: clinicId }])
       .select()
       .single();
-    if (error) throw error;
+    if (error) { console.error('saveClinicalHistory insert error:', error); throw error; }
     return data;
   }
 };

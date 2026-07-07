@@ -34,15 +34,15 @@ export const getNotifications = async (clinicId) => {
 
     const { data: citasData } = await supabase
       .from('citas')
-      .select('id, fecha_hora, pacientes(nombre, apellido)')
+      .select('id, start, pacientes(nombre, apellido)')
       .eq('clinic_id', clinicId)
       .eq('estado', 'Programada')
-      .gte('fecha_hora', today)
-      .lte('fecha_hora', tomorrow)
-      .order('fecha_hora', { ascending: true });
+      .gte('start', today)
+      .lte('start', tomorrow)
+      .order('start', { ascending: true });
 
     const virtualNotifs = (citasData || []).map(cita => {
-      const citaDate = new Date(cita.fecha_hora);
+      const citaDate = new Date(cita.start);
       const isCitaToday = isToday(citaDate);
       const dayText = isCitaToday ? 'Hoy' : 'Mañana';
       const timeText = format(citaDate, 'HH:mm');

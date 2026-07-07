@@ -1,50 +1,40 @@
 import { supabase } from '../lib/supabase';
 
 export const getTreatmentsByPatient = async (pacienteId, clinicId) => {
-  // We need to join with historias_clinicas since tratamientos link to it, 
-  // or we can adjust if we link treatment to patient directly.
-  // Wait, in schema.sql:
-  // tratamientos: historia_clinica_id REFERENCES historias_clinicas(id)
-  // Let's get the historia_clinica_id for the patient.
-  const { data: hc } = await supabase.from('historias_clinicas').select('id').eq('paciente_id', pacienteId).eq('clinic_id', clinicId).single();
-  
-  if (!hc) return [];
-
   const { data, error } = await supabase
     .from('tratamientos')
-    .select('*, usuarios(nombre)')
-    .eq('historia_clinica_id', hc.id)
+    .select('*')
+    .eq('paciente_id', pacienteId)
     .eq('clinic_id', clinicId)
     .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return data;
+  if (error) { console.error('getTreatmentsByPatient error:', error); throw error; }
+  return data || [];
 };
 
 export const createTreatment = async (pacienteId, treatmentData, clinicId) => {
-  const { data: hc } = await supabase.from('historias_clinicas').select('id').eq('paciente_id', pacienteId).eq('clinic_id', clinicId).single();
-  if (!hc) throw new Error("Historia clínica no encontrada");
-
   const { data, error } = await supabase
     .from('tratamientos')
-    .insert([{ ...treatmentData, historia_clinica_id: hc.id, clinic_id: clinicId }])
+    .insert([{ ...treatmentData, paciente_id: pacienteId, clinic_id: clinicId }])
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) { console.error('createTreatment error:', error); throw error; }
   return data;
 };
 
 export const updateTreatment = async (id, treatmentData, clinicId) => {
+  const { id: _, clinic_id: __, paciente_id: ___, created_at: ____, ...cleanData } = treatmentData;
+
   const { data, error } = await supabase
     .from('tratamientos')
-    .update(treatmentData)
+    .update(cleanData)
     .eq('id', id)
     .eq('clinic_id', clinicId)
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) { console.error('updateTreatment error:', error); throw error; }
   return data;
 };
 

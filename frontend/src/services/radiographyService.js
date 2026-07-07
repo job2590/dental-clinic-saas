@@ -8,18 +8,19 @@ export const getRadiographiesByPatient = async (patientId, clinicId) => {
     .eq('clinic_id', clinicId)
     .order('fecha', { ascending: false });
 
-  if (error) throw error;
-  return data;
+  if (error) { console.error('getRadiographiesByPatient error:', error); throw error; }
+  return data || [];
 };
 
 export const createRadiography = async (radiographyData, clinicId) => {
+  // radiographyData debe incluir paciente_id, tipo, fecha, notas, imagen_url
   const { data, error } = await supabase
     .from('radiografias')
     .insert([{ ...radiographyData, clinic_id: clinicId }])
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) { console.error('createRadiography error:', error); throw error; }
   return data;
 };
 

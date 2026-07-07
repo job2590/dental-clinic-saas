@@ -16,8 +16,8 @@ export const getDashboardStats = async (clinicId) => {
       .from('citas')
       .select('*', { count: 'exact', head: true })
       .eq('clinic_id', clinicId)
-      .gte('fecha_hora', `${today}T00:00:00Z`)
-      .lte('fecha_hora', `${today}T23:59:59Z`);
+      .gte('start', `${today}T00:00:00Z`)
+      .lte('start', `${today}T23:59:59Z`);
 
     // 3. Monthly Revenue
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
@@ -65,7 +65,7 @@ export const getLatestPatients = async (clinicId) => {
   if (!clinicId) return [];
   const { data } = await supabase
     .from('pacientes')
-    .select('id, nombre, apellidos, created_at')
+    .select('id, nombre, apellido, created_at')
     .eq('clinic_id', clinicId)
     .order('created_at', { ascending: false })
     .limit(4);
@@ -74,7 +74,7 @@ export const getLatestPatients = async (clinicId) => {
 
   return data.map(p => ({
     id: p.id,
-    name: `${p.nombre} ${p.apellidos}`,
+    name: `${p.nombre} ${p.apellido}`,
     date: new Date(p.created_at).toLocaleDateString(),
     treatment: 'Evaluación inicial' // Podría cruzarse con tratamientos
   }));
@@ -86,19 +86,19 @@ export const getUpcomingAppointments = async (clinicId) => {
   
   const { data } = await supabase
     .from('citas')
-    .select('id, fecha_hora, estado, pacientes(nombre, apellidos)')
+    .select('id, start, estado, pacientes(nombre, apellido)')
     .eq('clinic_id', clinicId)
-    .gte('fecha_hora', today)
-    .order('fecha_hora', { ascending: true })
+    .gte('start', today)
+    .order('start', { ascending: true })
     .limit(4);
 
   if (!data) return [];
 
   return data.map(c => {
-    const time = new Date(c.fecha_hora).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const time = new Date(c.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     return {
       id: c.id,
-      patient: c.pacientes ? `${c.pacientes.nombre} ${c.pacientes.apellidos}` : 'Paciente',
+      patient: c.pacientes ? `${c.pacientes.nombre} ${c.pacientes.apellido}` : 'Paciente',
       time,
       status: c.estado
     };

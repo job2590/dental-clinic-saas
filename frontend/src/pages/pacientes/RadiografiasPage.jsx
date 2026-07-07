@@ -103,6 +103,7 @@ const RadiografiasPage = () => {
       
       const radiographyData = {
         ...formData,
+        paciente_id: id,
         imagen_url: urlData.publicUrl
       };
 

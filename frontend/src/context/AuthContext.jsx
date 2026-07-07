@@ -27,7 +27,6 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false);
     };
     fetchStoredUser();
-    setIsLoading(false);
   }, []);
 
   const login = async (email, password, rememberMe) => {

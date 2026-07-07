@@ -1,6 +1,5 @@
 import { supabase } from '../lib/supabase';
 
-// Generar código estilo PAC-0001
 const generateCode = async (clinicId) => {
   const { count } = await supabase
     .from('pacientes')
@@ -19,8 +18,8 @@ export const getPatients = async (clinicId) => {
     .eq('clinic_id', clinicId)
     .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return data;
+  if (error) { console.error('getPatients error:', error); throw error; }
+  return data || [];
 };
 
 export const getPatientById = async (id, clinicId) => {
@@ -48,20 +47,23 @@ export const createPatient = async (patientData, clinicId) => {
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) { console.error('createPatient error:', error); throw error; }
   return data;
 };
 
 export const updatePatient = async (id, patientData, clinicId) => {
+  // No enviar campos que no deben actualizarse
+  const { id: _, clinic_id: __, created_at: ___, ...cleanData } = patientData;
+  
   const { data, error } = await supabase
     .from('pacientes')
-    .update(patientData)
+    .update(cleanData)
     .eq('id', id)
     .eq('clinic_id', clinicId)
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) { console.error('updatePatient error:', error); throw error; }
   return data;
 };
 
@@ -72,6 +74,6 @@ export const deletePatient = async (id, clinicId) => {
     .eq('id', id)
     .eq('clinic_id', clinicId);
 
-  if (error) throw error;
+  if (error) { console.error('deletePatient error:', error); throw error; }
   return true;
 };
