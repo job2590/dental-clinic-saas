@@ -269,27 +269,9 @@ const PacienteForm = () => {
               <i className="bi bi-clipboard2-pulse me-2"></i> Datos Clínicos Generales
             </h5>
             <div className="row g-3">
-              <div className="col-md-4">
+              <div className="col-12">
                 <label className="form-label text-muted fw-semibold small">Contacto de Emergencia</label>
                 <input type="text" className="form-control bg-light" name="contacto_emergencia" placeholder="Nombre y Teléfono" value={formData.contacto_emergencia} onChange={handleChange} />
-              </div>
-              <div className="col-md-4">
-                <label className="form-label text-muted fw-semibold small">Seguro Médico</label>
-                <input type="text" className="form-control bg-light" name="seguro" value={formData.seguro} onChange={handleChange} />
-              </div>
-              <div className="col-md-4">
-                <label className="form-label text-muted fw-semibold small">Tipo de Sangre</label>
-                <select className="form-select bg-light" name="tipo_sangre" value={formData.tipo_sangre} onChange={handleChange}>
-                  <option value="">Seleccionar...</option>
-                  <option value="A+">A+</option>
-                  <option value="A-">A-</option>
-                  <option value="B+">B+</option>
-                  <option value="B-">B-</option>
-                  <option value="AB+">AB+</option>
-                  <option value="AB-">AB-</option>
-                  <option value="O+">O+</option>
-                  <option value="O-">O-</option>
-                </select>
               </div>
               <div className="col-12">
                 <label className="form-label text-muted fw-semibold small">Observaciones Generales</label>
