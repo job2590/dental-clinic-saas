@@ -43,7 +43,7 @@ const cleanDataForDB = (data) => {
 };
 
 export const createPatient = async (patientData, clinicId) => {
-  const codigo = await generateCode(clinicId);
+  const codigo = patientData.ci;
   const cleanedData = cleanDataForDB(patientData);
   
   const { data, error } = await supabase

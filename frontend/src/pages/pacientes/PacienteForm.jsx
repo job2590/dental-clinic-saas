@@ -199,8 +199,8 @@ const PacienteForm = () => {
 
             <div className="row g-3">
               <div className="col-md-4">
-                <label className="form-label text-muted fw-semibold small">Fecha Nacimiento <span className="text-danger">*</span></label>
-                <input type="date" className="form-control bg-light" name="fecha_nacimiento" value={formData.fecha_nacimiento} onChange={handleChange} required />
+                <label className="form-label text-muted fw-semibold small">Fecha Nacimiento</label>
+                <input type="date" className="form-control bg-light" name="fecha_nacimiento" value={formData.fecha_nacimiento} onChange={handleChange} />
               </div>
               <div className="col-md-2">
                 <label className="form-label text-muted fw-semibold small">Edad</label>
