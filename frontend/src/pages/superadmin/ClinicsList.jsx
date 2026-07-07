@@ -220,7 +220,7 @@ const ClinicsList = () => {
 
       {showModal && (
         <div className="modal-backdrop bg-dark bg-opacity-50 d-flex justify-content-center align-items-center" style={{position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 1050}}>
-          <div className="card border-0 shadow-lg rounded-4 w-100" style={{maxWidth: '600px', animation: 'fadeIn 0.2s ease-out'}}>
+          <div className="card border-0 shadow-lg rounded-4 w-100 m-3" style={{maxWidth: '600px', animation: 'fadeIn 0.2s ease-out'}}>
             <div className="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
               <h5 className="fw-bold text-primary mb-0">
                 <i className="bi bi-building me-2"></i> {isEditing ? 'Editar Clínica' : 'Nueva Clínica'}
