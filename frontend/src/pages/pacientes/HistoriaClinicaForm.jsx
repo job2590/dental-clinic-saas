@@ -5,9 +5,6 @@ import { getClinicalHistory, saveClinicalHistory } from '../../services/clinical
 import { getClinicById } from '../../services/superAdminService';
 import { useAuth } from '../../context/AuthContext';
 
-import pdfMake from "pdfmake/build/pdfmake";
-import pdfFonts from "pdfmake/build/vfs_fonts";
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 const HistoriaClinicaForm = () => {
   const { user } = useAuth();
@@ -106,8 +103,17 @@ const HistoriaClinicaForm = () => {
     }
   };
 
-  const handlePrint = () => {
-    const docDefinition = {
+  const handlePrint = async () => {
+    try {
+      const pdfMakeModule = await import('pdfmake/build/pdfmake');
+      const pdfFontsModule = await import('pdfmake/build/vfs_fonts');
+      
+      const pdfMake = pdfMakeModule.default || pdfMakeModule;
+      const pdfFonts = pdfFontsModule.default || pdfFontsModule;
+      
+      pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : window.pdfMake?.vfs;
+
+      const docDefinition = {
       content: [
         // Encabezado
         {
@@ -284,6 +290,10 @@ const HistoriaClinicaForm = () => {
     };
 
     pdfMake.createPdf(docDefinition).download(`Historia_Clinica_${patient?.nombre}_${patient?.apellido}.pdf`);
+    } catch (error) {
+      console.error("Error al generar el PDF:", error);
+      alert("Hubo un problema al generar el PDF. Revisa la consola.");
+    }
   };
 
   if (loading) {
