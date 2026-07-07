@@ -167,15 +167,7 @@ const PacienteProfile = () => {
 
               <h6 className="fw-bold text-secondary mb-3"><i className="bi bi-clipboard2-pulse me-2 text-primary"></i> Datos Clínicos Iniciales</h6>
               <div className="row g-4 mb-4">
-                <div className="col-md-4">
-                  <span className="text-muted small d-block mb-1">Tipo de Sangre</span>
-                  <span className="fw-bold text-danger d-inline-block bg-danger bg-opacity-10 px-3 py-2 rounded">{patient.tipo_sangre || 'Desconocido'}</span>
-                </div>
-                <div className="col-md-4">
-                  <span className="text-muted small d-block mb-1">Seguro Médico</span>
-                  <span className="fw-medium text-dark d-block bg-light p-2 rounded">{patient.seguro || 'Particular'}</span>
-                </div>
-                <div className="col-md-4">
+                <div className="col-12">
                   <span className="text-muted small d-block mb-1">Contacto de Emergencia</span>
                   <span className="fw-medium text-dark d-block bg-light p-2 rounded">{patient.contacto_emergencia || 'No registrado'}</span>
                 </div>
