@@ -72,4 +72,4 @@ dental-clinic-amanecer/
 
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia MIT - mira el archivo [LICENSE](LICENSE) para más detalles.
+Este es un software de código cerrado y propietario. Todos los derechos reservados © 2026 Dental Clinic Amanecer SaaS. Queda estrictamente prohibida la copia, distribución, modificación o uso no autorizado de este código fuente.
