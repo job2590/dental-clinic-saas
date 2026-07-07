@@ -85,6 +85,36 @@ export const markAsRead = async (clinicId) => {
   }
 };
 
+// Obtiene el historial completo (leídas y no leídas)
+export const getAllNotifications = async (clinicId) => {
+  if (!clinicId) return [];
+  try {
+    const { data: dbNotifs, error } = await supabase
+      .from('notificaciones')
+      .select('*')
+      .eq('clinic_id', clinicId)
+      .order('created_at', { ascending: false });
+
+    if (error) console.error('Error fetching all notifs:', error);
+
+    const realNotifs = (dbNotifs || []).map(n => ({
+      id: `db-${n.id}`,
+      real_id: n.id,
+      title: n.titulo,
+      message: n.mensaje,
+      type: n.tipo,
+      time: format(new Date(n.created_at), "dd MMM HH:mm", { locale: es }),
+      read: n.leida,
+      isVirtual: false
+    }));
+
+    return realNotifs;
+  } catch (err) {
+    console.error('Error in getAllNotifications:', err);
+    return [];
+  }
+};
+
 // --- Funciones para SuperAdmin ---
 
 export const createNotification = async (clinicId, titulo, mensaje, tipo = 'sistema') => {

@@ -72,9 +72,9 @@ const TopNavbar = ({ toggleSidebar }) => {
               <span className="position-absolute top-25 start-75 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
             )}
           </button>
-          <div className="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-0" style={{ width: '300px' }}>
+          <div className="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-0" style={{ width: '320px' }}>
             <div className="p-3 border-bottom d-flex justify-content-between align-items-center bg-light rounded-top">
-              <h6 className="mb-0 fw-bold">Notificaciones</h6>
+              <h6 className="mb-0 fw-bold">Notificaciones Recientes</h6>
               {unreadCount > 0 && <span className="badge bg-primary rounded-pill">{unreadCount} nuevas</span>}
             </div>
             <div className="list-group list-group-flush" style={{ maxHeight: '300px', overflowY: 'auto' }}>
@@ -82,7 +82,7 @@ const TopNavbar = ({ toggleSidebar }) => {
                 <div className="p-4 text-center text-muted small">No tienes notificaciones.</div>
               ) : (
                 notifications.map(n => (
-                  <div key={n.id} className={`list-group-item p-3 border-bottom-0 ${!n.read ? 'bg-primary bg-opacity-10' : ''}`}>
+                  <div key={n.id} className={`list-group-item p-3 border-bottom-0 cursor-pointer ${!n.read ? 'bg-primary bg-opacity-10' : ''}`} onClick={() => navigate('/notificaciones')} style={{ cursor: 'pointer' }}>
                     <div className="d-flex w-100 justify-content-between align-items-start">
                       <div>
                         <h6 className="mb-1 small fw-semibold text-dark">
@@ -98,9 +98,9 @@ const TopNavbar = ({ toggleSidebar }) => {
                 ))
               )}
             </div>
-            <div className="p-2 border-top text-center bg-light rounded-bottom">
+            <div className="p-2 border-top text-center bg-light rounded-bottom d-flex justify-content-between">
               <button 
-                className="btn btn-link btn-sm text-decoration-none small" 
+                className="btn btn-link btn-sm text-decoration-none small text-secondary" 
                 onClick={async () => {
                   setNotifications(notifications.map(n => ({ ...n, read: true })));
                   if (clinic?.id) {
@@ -108,7 +108,13 @@ const TopNavbar = ({ toggleSidebar }) => {
                   }
                 }}
               >
-                Marcar todas como leídas
+                Marcar leídas
+              </button>
+              <button 
+                className="btn btn-link btn-sm text-decoration-none small fw-bold" 
+                onClick={() => navigate('/notificaciones')}
+              >
+                Ver historial completo
               </button>
             </div>
           </div>
