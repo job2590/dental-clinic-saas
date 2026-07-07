@@ -6,6 +6,19 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ==============================================================================
+-- LIMPIEZA DE TABLAS EXISTENTES (Si las hay)
+-- ==============================================================================
+DROP TABLE IF EXISTS odontogramas CASCADE;
+DROP TABLE IF EXISTS pagos CASCADE;
+DROP TABLE IF EXISTS tratamientos CASCADE;
+DROP TABLE IF EXISTS citas CASCADE;
+DROP TABLE IF EXISTS historias_clinicas CASCADE;
+DROP TABLE IF EXISTS pacientes CASCADE;
+DROP TABLE IF EXISTS usuarios CASCADE;
+DROP TABLE IF EXISTS roles CASCADE;
+DROP TABLE IF EXISTS clinics CASCADE;
+
+-- ==============================================================================
 -- 1. SaaS GLOBAL: Clínicas y Usuarios Administradores
 -- ==============================================================================
 
