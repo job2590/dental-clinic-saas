@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getNotifications, markAsRead } from '../services/notificationService';
 
 const TopNavbar = ({ toggleSidebar }) => {
   const { user, clinic, logout } = useAuth();
@@ -10,12 +11,18 @@ const TopNavbar = ({ toggleSidebar }) => {
     localStorage.getItem('theme') === 'dark'
   );
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: '¡Bienvenido al sistema!', time: 'Hace un momento', read: false },
-    { id: 2, title: 'Nueva función disponible', time: 'Hace 2 horas', read: false }
-  ]);
-  
+  const [notifications, setNotifications] = useState([]);
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  useEffect(() => {
+    const fetchNotifs = async () => {
+      if (clinic?.id) {
+        const notifs = await getNotifications(clinic.id);
+        setNotifications(notifs);
+      }
+    };
+    fetchNotifs();
+  }, [clinic]);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -75,20 +82,34 @@ const TopNavbar = ({ toggleSidebar }) => {
                 <div className="p-4 text-center text-muted small">No tienes notificaciones.</div>
               ) : (
                 notifications.map(n => (
-                  <button key={n.id} className={`list-group-item list-group-item-action p-3 border-bottom-0 ${!n.read ? 'bg-primary bg-opacity-10' : ''}`} onClick={() => {
-                    setNotifications(notifications.map(notif => notif.id === n.id ? { ...notif, read: true } : notif));
-                  }}>
-                    <div className="d-flex w-100 justify-content-between">
-                      <h6 className="mb-1 small fw-semibold text-dark">{n.title}</h6>
-                      {!n.read && <span className="p-1 bg-primary rounded-circle mt-1 d-inline-block"></span>}
+                  <div key={n.id} className={`list-group-item p-3 border-bottom-0 ${!n.read ? 'bg-primary bg-opacity-10' : ''}`}>
+                    <div className="d-flex w-100 justify-content-between align-items-start">
+                      <div>
+                        <h6 className="mb-1 small fw-semibold text-dark">
+                          {n.type === 'recordatorio' && <i className="bi bi-calendar-event text-primary me-2"></i>}
+                          {n.title}
+                        </h6>
+                        <p className="mb-1 small text-secondary">{n.message}</p>
+                      </div>
+                      {!n.read && <span className="p-1 bg-primary rounded-circle mt-1 d-inline-block flex-shrink-0"></span>}
                     </div>
                     <small className="text-muted" style={{ fontSize: '0.7rem' }}>{n.time}</small>
-                  </button>
+                  </div>
                 ))
               )}
             </div>
             <div className="p-2 border-top text-center bg-light rounded-bottom">
-              <button className="btn btn-link btn-sm text-decoration-none small" onClick={() => setNotifications(notifications.map(n => ({ ...n, read: true })))}>Marcar todas como leídas</button>
+              <button 
+                className="btn btn-link btn-sm text-decoration-none small" 
+                onClick={async () => {
+                  setNotifications(notifications.map(n => ({ ...n, read: true })));
+                  if (clinic?.id) {
+                    await markAsRead(clinic.id);
+                  }
+                }}
+              >
+                Marcar todas como leídas
+              </button>
             </div>
           </div>
         </div>

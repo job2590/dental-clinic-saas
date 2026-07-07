@@ -21,6 +21,7 @@ import ClinicsList from './pages/superadmin/ClinicsList';
 import ClinicUsersList from './pages/superadmin/ClinicUsersList';
 import UserProfile from './pages/UserProfile';
 import Configuracion from './pages/Configuracion';
+import SuperAdminNotificaciones from './pages/superadmin/SuperAdminNotificaciones';
 
 function App() {
   return (
@@ -56,6 +57,7 @@ function App() {
             <Route path="/superadmin/clinics" element={<ClinicsList />} />
             <Route path="/superadmin/clinics/:clinicId/users" element={<ClinicUsersList />} />
             <Route path="/superadmin/perfil" element={<UserProfile />} />
+            <Route path="/superadmin/notificaciones" element={<SuperAdminNotificaciones />} />
             <Route path="/superadmin/configuracion" element={<Configuracion />} />
           </Route>
 
