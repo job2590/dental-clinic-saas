@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { getClinics, createClinic, updateClinic, changeClinicStatus, deleteClinic } from '../../services/superAdminService';
+import { supabase } from '../../lib/supabase';
 
 const ClinicsList = () => {
   const [clinics, setClinics] = useState([]);
@@ -17,8 +18,10 @@ const ClinicsList = () => {
     telefono: '',
     correo: '',
     plan: 'Básico',
-    color_principal: '#0d6efd'
+    color_principal: '#0d6efd',
+    logo: ''
   });
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const fetchClinics = async () => {
     try {
@@ -48,7 +51,8 @@ const ClinicsList = () => {
         telefono: clinic.telefono || '',
         correo: clinic.correo || '',
         plan: clinic.plan || 'Básico',
-        color_principal: clinic.color_principal || '#0d6efd'
+        color_principal: clinic.color_principal || '#0d6efd',
+        logo: clinic.logo || ''
       });
       setIsEditing(true);
       setEditingId(clinic.id);
@@ -59,12 +63,40 @@ const ClinicsList = () => {
         telefono: '',
         correo: '',
         plan: 'Básico',
-        color_principal: '#0d6efd'
+        color_principal: '#0d6efd',
+        logo: ''
       });
       setIsEditing(false);
       setEditingId(null);
     }
     setShowModal(true);
+  };
+
+  const handleLogoUpload = async (e) => {
+    try {
+      if (!e.target.files || e.target.files.length === 0) return;
+      const file = e.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${fileName}`;
+      
+      setUploadingLogo(true);
+      
+      const { error: uploadError } = await supabase.storage
+        .from('logos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+      
+      const { data } = supabase.storage.from('logos').getPublicUrl(filePath);
+      setFormData({ ...formData, logo: data.publicUrl });
+      
+    } catch (error) {
+      console.error(error);
+      Swal.fire('Error', 'No se pudo subir la imagen', 'error');
+    } finally {
+      setUploadingLogo(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -167,12 +199,16 @@ const ClinicsList = () => {
                     <tr key={clinic.id}>
                       <td className="ps-4 py-3">
                         <div className="d-flex align-items-center">
-                          <div 
-                            className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold me-3"
-                            style={{width: '40px', height: '40px', backgroundColor: clinic.color_principal || '#0d6efd'}}
-                          >
-                            {clinic.nombre.charAt(0).toUpperCase()}
-                          </div>
+                          {clinic.logo ? (
+                            <img src={clinic.logo} alt="Logo" className="rounded-circle me-3 object-fit-cover shadow-sm" style={{width: '40px', height: '40px'}} />
+                          ) : (
+                            <div 
+                              className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold me-3"
+                              style={{width: '40px', height: '40px', backgroundColor: clinic.color_principal || '#0d6efd'}}
+                            >
+                              {clinic.nombre.charAt(0).toUpperCase()}
+                            </div>
+                          )}
                           <div>
                             <div className="fw-bold text-dark">{clinic.nombre}</div>
                             <div className="small text-muted text-truncate" style={{maxWidth: '200px'}}>ID: {clinic.id}</div>
@@ -260,6 +296,16 @@ const ClinicsList = () => {
                       <input type="color" className="form-control form-control-color bg-light" name="color_principal" value={formData.color_principal} onChange={handleChange} title="Elige un color" />
                       <span className="small text-muted">{formData.color_principal}</span>
                     </div>
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label text-muted small fw-semibold">Logotipo (Opcional)</label>
+                    <div className="d-flex align-items-center gap-3">
+                      {formData.logo && (
+                        <img src={formData.logo} alt="Preview" className="rounded shadow-sm object-fit-cover" style={{width: '50px', height: '50px'}} />
+                      )}
+                      <input type="file" className="form-control bg-light" accept="image/*" onChange={handleLogoUpload} disabled={uploadingLogo} />
+                    </div>
+                    {uploadingLogo && <small className="text-primary mt-1 d-block">Subiendo logo...</small>}
                   </div>
                 </div>
               </form>

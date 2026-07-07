@@ -56,9 +56,13 @@ const TopNavbar = ({ toggleSidebar }) => {
             type="button" 
             data-bs-toggle="dropdown"
           >
-            <div className="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style={{ width: '36px', height: '36px' }}>
-              {user?.name ? user.name.charAt(0) : 'U'}
-            </div>
+            {user?.avatar ? (
+              <img src={user.avatar} alt="Avatar" className="rounded-circle object-fit-cover shadow-sm" style={{ width: '36px', height: '36px' }} />
+            ) : (
+              <div className="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style={{ width: '36px', height: '36px' }}>
+                {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+              </div>
+            )}
             <div className="d-none d-md-flex flex-column text-start ms-2 me-3 lh-sm">
               <span className="fw-semibold text-dark fs-6">{user?.name || 'Usuario'}</span>
               <span className="text-muted" style={{fontSize: '0.75rem'}}>{clinic?.nombre || 'Clínica'}</span>
@@ -70,12 +74,12 @@ const TopNavbar = ({ toggleSidebar }) => {
             <li><h6 className="dropdown-header text-muted">{user?.email}</h6></li>
             <li><hr className="dropdown-divider" /></li>
             <li>
-              <button className="dropdown-item d-flex align-items-center py-2 text-secondary">
+              <button className="dropdown-item d-flex align-items-center py-2 text-secondary" onClick={() => navigate(user?.role === 'superadmin' ? '/superadmin/perfil' : '/perfil')}>
                 <i className="bi bi-person me-3"></i> Mi Perfil
               </button>
             </li>
             <li>
-              <button className="dropdown-item d-flex align-items-center py-2 text-secondary">
+              <button className="dropdown-item d-flex align-items-center py-2 text-secondary" onClick={() => navigate(user?.role === 'superadmin' ? '/superadmin/perfil' : '/perfil')}>
                 <i className="bi bi-gear me-3"></i> Configuración
               </button>
             </li>
