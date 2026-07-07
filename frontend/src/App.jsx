@@ -20,6 +20,7 @@ import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard';
 import ClinicsList from './pages/superadmin/ClinicsList';
 import ClinicUsersList from './pages/superadmin/ClinicUsersList';
 import UserProfile from './pages/UserProfile';
+import Configuracion from './pages/Configuracion';
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
             <Route path="/citas" element={<AgendaPage />} />
             <Route path="/caja" element={<CajaPage />} />
             <Route path="/perfil" element={<UserProfile />} />
+            <Route path="/configuracion" element={<Configuracion />} />
           </Route>
           
           <Route element={<SuperAdminRoute><Layout /></SuperAdminRoute>}>
@@ -54,6 +56,7 @@ function App() {
             <Route path="/superadmin/clinics" element={<ClinicsList />} />
             <Route path="/superadmin/clinics/:clinicId/users" element={<ClinicUsersList />} />
             <Route path="/superadmin/perfil" element={<UserProfile />} />
+            <Route path="/superadmin/configuracion" element={<Configuracion />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/login" replace />} />
