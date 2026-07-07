@@ -31,6 +31,12 @@ const Sidebar = ({ isOpen }) => {
                 {isOpen && <span className="ms-3 fw-semibold">Clínicas</span>}
               </NavLink>
             </li>
+            <li className="nav-item mb-2">
+              <NavLink to="/superadmin/notificaciones" className={({isActive}) => `nav-link rounded d-flex align-items-center px-3 py-2 ${isActive ? 'bg-primary text-white shadow-sm' : 'text-secondary hover-bg'}`}>
+                <i className="bi bi-bell fs-5"></i>
+                {isOpen && <span className="ms-3 fw-semibold">Notificaciones</span>}
+              </NavLink>
+            </li>
           </>
         ) : (
           <>
