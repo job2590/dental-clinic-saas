@@ -1,7 +1,7 @@
-﻿import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getClinicById } from '../services/superAdminService';
 // IMPORTANTE: Asegúrate de que esta ruta apunte a tu archivo de configuración de supabase
-import { supabase } from '../services/supabase'; 
+import { supabase } from '../lib/supabase'; 
 
 const AuthContext = createContext();
 
