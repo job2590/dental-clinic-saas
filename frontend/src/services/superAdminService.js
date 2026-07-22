@@ -18,7 +18,7 @@ export const authenticateUser = async (email, password) => {
     .select('*, roles(nombre)')
     .eq('email', email)
     .eq('activo', true)
-    .single();
+    .maybeSingle();
 
   if (error || !user) {
     return { error: { message: 'Usuario no encontrado o inactivo.' } };
