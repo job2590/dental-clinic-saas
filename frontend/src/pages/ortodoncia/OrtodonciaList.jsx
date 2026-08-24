@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { generateOrthodonticPdf } from '../../services/specialtyPdfService';
+import { 
+  generateOrthodonticPdf, 
+  generateOrthodonticConsentPdf 
+} from '../../services/specialtyPdfService';
 import { getPatientById } from '../../services/patientService';
 
 const OrtodonciaList = () => {
@@ -25,7 +28,7 @@ const OrtodonciaList = () => {
       if (error) throw error;
       setRecords(data || []);
     } catch (err) {
-      console.error('Error al cargar historias de ortodoncia:', err);
+      console.error('Error al cargar fichas de ortodoncia:', err);
     } finally {
       setLoading(false);
     }
@@ -35,12 +38,21 @@ const OrtodonciaList = () => {
     fetchRecords();
   }, [user?.clinic_id]);
 
-  const handleExportPdf = async (record) => {
+  const handleExportHistoryPdf = async (record) => {
     try {
       const patient = await getPatientById(record.patient_id, user.clinic_id);
       await generateOrthodonticPdf(record, patient, clinic);
     } catch (err) {
-      console.error('Error al exportar PDF:', err);
+      console.error('Error al exportar historial PDF:', err);
+    }
+  };
+
+  const handleExportConsentPdf = async (record) => {
+    try {
+      const patient = await getPatientById(record.patient_id, user.clinic_id);
+      await generateOrthodonticConsentPdf(patient, clinic, record.tutor_name);
+    } catch (err) {
+      console.error('Error al exportar consentimiento PDF:', err);
     }
   };
 
@@ -56,10 +68,10 @@ const OrtodonciaList = () => {
             <i className="bi bi-activity text-primary me-2"></i>
             Módulo de Ortodoncia
           </h3>
-          <p className="text-muted mb-0">Gestión de Historias Clínicas de Ortodoncia, Evaluaciones y Consentimientos</p>
+          <p className="text-muted mb-0">Gestión de Fichas de Ortodoncia, Evaluaciones Clínicas y Documentos</p>
         </div>
         <Link to="/ortodoncia/nuevo" className="btn btn-primary fw-bold px-4 shadow-sm">
-          <i className="bi bi-plus-lg me-2"></i> Nuevo Expediente de Ortodoncia
+          <i className="bi bi-plus-lg me-2"></i> Nueva Ficha de Ortodoncia
         </Link>
       </div>
 
@@ -87,8 +99,8 @@ const OrtodonciaList = () => {
           ) : filteredRecords.length === 0 ? (
             <div className="text-center py-5 text-muted">
               <i className="bi bi-folder2-open fs-1 text-secondary opacity-50 d-block mb-2"></i>
-              <p className="mb-0">No se encontraron expedientes de ortodoncia.</p>
-              <small>Haz clic en "Nuevo Expediente de Ortodoncia" para registrar uno.</small>
+              <p className="mb-0">No se encontraron fichas de ortodoncia.</p>
+              <small>Haz clic en "Nueva Ficha de Ortodoncia" para registrar una.</small>
             </div>
           ) : (
             <div className="table-responsive">
@@ -98,9 +110,9 @@ const OrtodonciaList = () => {
                     <th className="ps-4 py-3">Paciente</th>
                     <th className="py-3">Fecha Consulta</th>
                     <th className="py-3">Perfil / Oclusión</th>
+                    <th className="py-3">Sonrisa</th>
                     <th className="py-3">Diagnóstico</th>
-                    <th className="py-3 text-center">Consentimiento</th>
-                    <th className="pe-4 py-3 text-end">Acciones</th>
+                    <th className="pe-4 py-3 text-end">Documentos y Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -112,28 +124,36 @@ const OrtodonciaList = () => {
                         <span className="badge bg-light text-dark border me-1">{r.profile || 'Perfil N/A'}</span>
                         <span className="badge bg-light text-dark border">{r.molar_relation || 'Clase N/A'}</span>
                       </td>
-                      <td className="text-truncate max-w-200" title={r.diagnosis}>{r.diagnosis || 'Sin diagnóstico'}</td>
-                      <td className="text-center">
-                        {r.consent_given ? (
-                          <span className="badge bg-success"><i className="bi bi-check-circle me-1"></i> Firmado</span>
-                        ) : (
-                          <span className="badge bg-warning text-dark"><i className="bi bi-clock me-1"></i> Pendiente</span>
-                        )}
+                      <td>
+                        <span className="badge bg-info bg-opacity-10 text-dark border border-info border-opacity-25">
+                          Sonrisa {r.smile_type || 'Media'}
+                        </span>
                       </td>
+                      <td className="text-truncate max-w-200" title={r.diagnosis}>{r.diagnosis || 'Sin diagnóstico'}</td>
                       <td className="pe-4 text-end">
-                        <button 
-                          className="btn btn-sm btn-outline-secondary me-2" 
-                          title="Descargar PDF Vectorial"
-                          onClick={() => handleExportPdf(r)}
-                        >
-                          <i className="bi bi-file-pdf text-danger"></i> PDF
-                        </button>
-                        <button 
-                          className="btn btn-sm btn-primary"
-                          onClick={() => navigate(`/ortodoncia/editar/${r.id}`)}
-                        >
-                          <i className="bi bi-pencil me-1"></i> Editar
-                        </button>
+                        <div className="btn-group btn-group-sm">
+                          <button 
+                            className="btn btn-outline-primary" 
+                            title="Descargar Historial de Ortodoncia PDF"
+                            onClick={() => handleExportHistoryPdf(r)}
+                          >
+                            <i className="bi bi-file-earmark-medical me-1"></i> Historial PDF
+                          </button>
+                          <button 
+                            className="btn btn-outline-danger" 
+                            title="Descargar Consentimiento Informado PDF"
+                            onClick={() => handleExportConsentPdf(r)}
+                          >
+                            <i className="bi bi-file-earmark-check me-1"></i> Consentimiento PDF
+                          </button>
+                          <button 
+                            className="btn btn-primary"
+                            onClick={() => navigate(`/ortodoncia/editar/${r.id}`)}
+                            title="Editar Ficha"
+                          >
+                            <i className="bi bi-pencil me-1"></i> Editar
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

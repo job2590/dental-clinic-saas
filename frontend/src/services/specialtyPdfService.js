@@ -13,15 +13,17 @@ const getPdfMake = async () => {
 };
 
 const commonStyles = {
-  headerTitle: { fontSize: 16, bold: true, color: '#0d6efd' },
-  headerSub: { fontSize: 10, color: '#666666' },
-  docTitle: { fontSize: 14, bold: true, alignment: 'right' },
-  docDate: { fontSize: 10, alignment: 'right' },
-  sectionHeader: { fontSize: 11, bold: true, color: '#0d6efd', margin: [0, 8, 0, 4] },
-  tableHeader: { fontSize: 9, bold: true, fillColor: '#f8f9fa' },
-  bodyText: { fontSize: 9, margin: [0, 2, 0, 2] },
-  legalText: { fontSize: 9, alignment: 'justify', margin: [0, 10, 0, 20] },
-  signatureTitle: { fontSize: 9, bold: true },
+  headerTitle: { fontSize: 15, bold: true, color: '#0d6efd' },
+  headerSub: { fontSize: 9, color: '#666666' },
+  docTitle: { fontSize: 13, bold: true, alignment: 'right', color: '#1a1a1a' },
+  docDate: { fontSize: 9, alignment: 'right', color: '#666666' },
+  sectionHeader: { fontSize: 10, bold: true, color: '#0d6efd', margin: [0, 8, 0, 4] },
+  tableHeader: { fontSize: 8.5, bold: true, fillColor: '#f8f9fa' },
+  bodyText: { fontSize: 8.5, margin: [0, 1.5, 0, 1.5], color: '#222222' },
+  legalTitle: { fontSize: 13, bold: true, alignment: 'center', color: '#0d6efd', margin: [0, 0, 0, 12] },
+  legalBody: { fontSize: 9, alignment: 'justify', lineHeight: 1.3, color: '#333333' },
+  legalItem: { fontSize: 8.5, alignment: 'justify', margin: [0, 2, 0, 2], lineHeight: 1.25 },
+  signatureTitle: { fontSize: 8.5, bold: true, color: '#222222' },
   signatureSub: { fontSize: 8, color: '#666666' }
 };
 
@@ -33,118 +35,295 @@ const buildHeader = (clinic, title) => [
         text: [
           { text: (clinic?.nombre || 'CLÍNICA DENTAL').toUpperCase() + '\n', style: 'headerTitle' },
           { text: (clinic?.direccion || '') + '\n', style: 'headerSub' },
-          { text: (clinic?.telefono || '') + ' | ' + (clinic?.correo || ''), style: 'headerSub' }
+          { text: (clinic?.telefono || '') + (clinic?.correo ? ' | ' + clinic?.correo : ''), style: 'headerSub' }
         ]
       },
       {
         width: 'auto',
         text: [
           { text: title.toUpperCase() + '\n', style: 'docTitle' },
-          { text: `Fecha: ${new Date().toLocaleDateString()}`, style: 'docDate' }
+          { text: `Fecha de emisión: ${new Date().toLocaleDateString()}`, style: 'docDate' }
         ]
       }
     ],
-    margin: [0, 0, 0, 10]
+    margin: [0, 0, 0, 8]
   },
-  { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1 }], margin: [0, 0, 0, 15] }
+  { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#0d6efd' }], margin: [0, 0, 0, 12] }
 ];
 
 const buildPatientInfoBlock = (patient) => ({
   table: {
-    widths: ['*', '*', '*'],
+    widths: ['35%', '30%', '35%'],
     body: [
       [
-        { text: `Paciente: ${patient?.nombre || ''} ${patient?.apellido || ''}`, style: 'bodyText', bold: true },
-        { text: `C.I.: ${patient?.ci || '-'}`, style: 'bodyText' },
-        { text: `Edad: ${patient?.edad || '-'} años`, style: 'bodyText' }
+        { text: [{ text: 'Paciente: ', bold: true }, `${patient?.nombre || ''} ${patient?.apellido || ''}`], style: 'bodyText' },
+        { text: [{ text: 'C.I.: ', bold: true }, `${patient?.ci || '-'}`], style: 'bodyText' },
+        { text: [{ text: 'Edad: ', bold: true }, `${patient?.edad ? patient.edad + ' años' : '-'}`], style: 'bodyText' }
       ],
       [
-        { text: `Sexo: ${patient?.sexo || '-'}`, style: 'bodyText' },
-        { text: `Celular: ${patient?.celular || '-'}`, style: 'bodyText' },
-        { text: `Dirección: ${patient?.direccion || '-'}`, style: 'bodyText' }
+        { text: [{ text: 'Sexo: ', bold: true }, `${patient?.sexo || '-'}`], style: 'bodyText' },
+        { text: [{ text: 'Celular: ', bold: true }, `${patient?.celular || '-'}`], style: 'bodyText' },
+        { text: [{ text: 'Dirección: ', bold: true }, `${patient?.direccion || '-'}`], style: 'bodyText' }
       ]
     ]
   },
-  layout: 'noBorders',
-  margin: [0, 0, 0, 15]
+  layout: {
+    fillColor: () => '#f8f9fa',
+    hLineWidth: () => 0.5,
+    vLineWidth: () => 0.5,
+    hLineColor: () => '#e9ecef',
+    vLineColor: () => '#e9ecef',
+    paddingLeft: () => 6,
+    paddingRight: () => 6,
+    paddingTop: () => 4,
+    paddingBottom: () => 4
+  },
+  margin: [0, 0, 0, 10]
 });
 
 // Helper para convertir base64/URL en elemento de imagen para pdfmake
 const getSignatureImage = (signatureUrl) => {
   if (signatureUrl && signatureUrl.startsWith('data:image')) {
-    return { image: signatureUrl, width: 140, height: 50, alignment: 'center' };
+    return { image: signatureUrl, width: 130, height: 45, alignment: 'center' };
   }
-  return { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 140, y2: 0, lineWidth: 1 }], alignment: 'center', margin: [0, 40, 0, 0] };
+  return { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 130, y2: 0, lineWidth: 1, lineColor: '#999999' }], alignment: 'center', margin: [0, 35, 0, 0] };
 };
 
 // ------------------------------------------------------------
-// 1. PDF ORTODONCIA
+// 1. PDF HISTORIAL DE ORTODONCIA
 // ------------------------------------------------------------
 export const generateOrthodonticPdf = async (record, patient, clinic) => {
   const pdfMake = await getPdfMake();
 
+  const consultationReasons = Array.isArray(record.consultation_reasons) ? [...record.consultation_reasons] : [];
+  if (record.consultation_other) {
+    consultationReasons.push(`Otros: ${record.consultation_other}`);
+  }
+
+  const systemicList = Array.isArray(record.systemic_diseases) ? [...record.systemic_diseases] : [];
+  if (record.systemic_other) {
+    systemicList.push(`Otra: ${record.systemic_other}`);
+  }
+
+  const habitsList = Array.isArray(record.habits) ? [...record.habits] : [];
+  if (record.habits_other) {
+    habitsList.push(`Otros: ${record.habits_other}`);
+  }
+
+  const orthoAntecedents = [];
+  if (record.previous_orthodontics) orthoAntecedents.push('Ortodoncia previa');
+  if (record.extractions) orthoAntecedents.push('Extracciones previas');
+  if (record.dental_trauma) orthoAntecedents.push('Traumatismo dental');
+  if (record.bruxism) orthoAntecedents.push('Bruxismo');
+  if (orthoAntecedents.length === 0) orthoAntecedents.push('Ninguno reportado');
+
   const docDefinition = {
     content: [
-      ...buildHeader(clinic, 'Historia Clínica de Ortodoncia'),
+      ...buildHeader(clinic, 'Historial Clínico de Ortodoncia'),
       buildPatientInfoBlock(patient),
 
-      { text: 'I. MOTIVO DE CONSULTA Y ANTECEDENTES', style: 'sectionHeader' },
-      { text: [{ text: 'Motivos de consulta: ', bold: true }, Array.isArray(record.consultation_reasons) ? record.consultation_reasons.join(', ') : '-'], style: 'bodyText' },
-      { text: [{ text: 'Antecedentes Médicos: ', bold: true }, Array.isArray(record.systemic_diseases) ? record.systemic_diseases.join(', ') : 'Ninguno'], style: 'bodyText' },
-      { text: [{ text: 'Alergias: ', bold: true }, record.has_allergies ? record.allergies_detail || 'Sí' : 'No'], style: 'bodyText' },
-      { text: [{ text: 'Hábitos: ', bold: true }, Array.isArray(record.habits) ? record.habits.join(', ') : 'Ninguno'], style: 'bodyText', margin: [0, 0, 0, 10] },
+      // I. MOTIVO DE CONSULTA Y ANTECEDENTES ORTODÓNCICOS
+      { text: 'I. MOTIVO DE CONSULTA Y ANTECEDENTES ORTODÓNCICOS', style: 'sectionHeader' },
+      { text: [{ text: 'Motivos de consulta: ', bold: true }, consultationReasons.length > 0 ? consultationReasons.join(', ') : 'No especificado'], style: 'bodyText' },
+      { text: [{ text: 'Antecedentes ortodóncicos: ', bold: true }, orthoAntecedents.join(', ')], style: 'bodyText' },
+      { text: [{ text: 'Fecha de consulta: ', bold: true }, record.consultation_date || '-'], style: 'bodyText', margin: [0, 0, 0, 6] },
 
-      { text: 'II. EVALUACIÓN CLÍNICA ORTODÓNCICA', style: 'sectionHeader' },
+      // ANTECEDENTES MÉDICOS Y HÁBITOS
+      { text: 'ANTECEDENTES MÉDICOS Y HÁBITOS', style: 'sectionHeader' },
+      { text: [{ text: 'Enfermedades Sistémicas: ', bold: true }, systemicList.length > 0 ? systemicList.join(', ') : 'Ninguna'], style: 'bodyText' },
+      { text: [{ text: 'Alergias: ', bold: true }, record.has_allergies ? (record.allergies_detail || 'Sí (sin detalle)') : 'No presenta'], style: 'bodyText' },
+      { text: [{ text: 'Medicamentos habituales: ', bold: true }, record.takes_medications ? (record.medications_detail || 'Sí (sin detalle)') : 'No consume'], style: 'bodyText' },
+      { text: [{ text: 'Cirugías: ', bold: true }, record.has_surgeries ? (record.surgeries_detail || 'Sí') : 'No'], style: 'bodyText' },
+      { text: [{ text: 'Hospitalizaciones: ', bold: true }, record.has_hospitalizations ? (record.hospitalizations_detail || 'Sí') : 'No'], style: 'bodyText' },
+      { text: [{ text: 'Hábitos nocivos identificados: ', bold: true }, habitsList.length > 0 ? habitsList.join(', ') : 'Ninguno'], style: 'bodyText', margin: [0, 0, 0, 6] },
+
+      // II. EXAMEN EXTRAORAL
+      { text: 'II. EXAMEN EXTRAORAL', style: 'sectionHeader' },
       {
         table: {
-          widths: ['*', '*', '*'],
+          widths: ['25%', '25%', '25%', '25%'],
           body: [
-            [{ text: `Perfil: ${record.profile || '-'}`, style: 'bodyText' }, { text: `Simetría: ${record.facial_symmetry || '-'}`, style: 'bodyText' }, { text: `Sonrisa: ${record.smile_type || '-'}`, style: 'bodyText' }],
-            [{ text: `Higiene: ${record.oral_hygiene || '-'}`, style: 'bodyText' }, { text: `Clase Molar: ${record.molar_relation || '-'}`, style: 'bodyText' }, { text: `Clase Canina: ${record.canine_relation || '-'}`, style: 'bodyText' }],
-            [{ text: `Overjet: ${record.overjet || '-'}`, style: 'bodyText' }, { text: `Overbite: ${record.overbite || '-'}`, style: 'bodyText' }, { text: `Apiñamiento: ${record.crowding || '-'}`, style: 'bodyText' }]
+            [
+              { text: [{ text: 'Perfil: ', bold: true }, `${record.profile || '-'}`], style: 'bodyText' },
+              { text: [{ text: 'Simetría: ', bold: true }, `${record.facial_symmetry || '-'}`], style: 'bodyText' },
+              { text: [{ text: 'Comp. Labial: ', bold: true }, `${record.lip_competence || '-'}`], style: 'bodyText' },
+              { text: [{ text: 'Tipo Sonrisa: ', bold: true }, `${record.smile_type || '-'}`], style: 'bodyText' }
+            ]
           ]
         },
         layout: 'noBorders',
-        margin: [0, 0, 0, 10]
+        margin: [0, 0, 0, 6]
       },
 
-      { text: 'III. DIAGNÓSTICO Y PLAN DE TRATAMIENTO', style: 'sectionHeader' },
-      { text: [{ text: 'Diagnóstico: ', bold: true }, record.diagnosis || 'Sin registro'], style: 'bodyText' },
-      { text: [{ text: 'Plan de Tratamiento: ', bold: true }, record.treatment_plan || 'Sin registro'], style: 'bodyText', margin: [0, 0, 0, 15] },
-
-      { text: 'IV. CONSENTIMIENTO INFORMADO Y AUTORIZACIÓN', style: 'sectionHeader' },
+      // III. EXAMEN INTRAORAL
+      { text: 'III. EXAMEN INTRAORAL', style: 'sectionHeader' },
       {
-        text: `Declaro haber recibido información explicativa y satisfactoria sobre el tratamiento ortodóncico propuesto, sus beneficios, riesgos, hábitos de cuidado y retenedores posteriores. Autorizo al profesional tratante a ejecutar el plan de tratamiento en ${clinic?.nombre || 'la clínica'}.`,
-        style: 'legalText'
+        table: {
+          widths: ['33%', '33%', '34%'],
+          body: [
+            [
+              { text: [{ text: 'Higiene oral: ', bold: true }, `${record.oral_hygiene || '-'}`], style: 'bodyText' },
+              { text: [{ text: 'Estado periodontal: ', bold: true }, `${record.periodontal_status || '-'}`], style: 'bodyText' },
+              { text: [{ text: 'Relación molar: ', bold: true }, `${record.molar_relation || '-'}`], style: 'bodyText' }
+            ],
+            [
+              { text: [{ text: 'Relación canina: ', bold: true }, `${record.canine_relation || '-'}`], style: 'bodyText' },
+              { text: [{ text: 'Overjet: ', bold: true }, `${record.overjet || '-'}`], style: 'bodyText' },
+              { text: [{ text: 'Overbite: ', bold: true }, `${record.overbite || '-'}`], style: 'bodyText' }
+            ],
+            [
+              { text: [{ text: 'Línea media: ', bold: true }, `${record.midline || '-'}`], style: 'bodyText' },
+              { text: [{ text: 'Apiñamiento: ', bold: true }, `${record.crowding || '-'}`], style: 'bodyText' },
+              { text: [{ text: 'Diastemas: ', bold: true }, record.has_diastemas ? 'Sí' : 'No'], style: 'bodyText' }
+            ],
+            [
+              { text: [{ text: 'Mordida cruzada: ', bold: true }, `${record.crossbite || 'No'}`], style: 'bodyText' },
+              { text: '', style: 'bodyText' },
+              { text: '', style: 'bodyText' }
+            ]
+          ]
+        },
+        layout: 'noBorders',
+        margin: [0, 0, 0, 6]
       },
 
+      // IV. DIAGNÓSTICO Y PLAN DE TRATAMIENTO
+      { text: 'IV. DIAGNÓSTICO Y PLAN DE TRATAMIENTO', style: 'sectionHeader' },
+      { text: [{ text: 'Diagnóstico: ', bold: true }, record.diagnosis || 'Sin registro'], style: 'bodyText' },
+      { text: [{ text: 'Plan de Tratamiento: ', bold: true }, record.treatment_plan || 'Sin registro'], style: 'bodyText' },
+      { text: [{ text: 'Observaciones: ', bold: true }, record.observations || 'Sin observaciones'], style: 'bodyText', margin: [0, 0, 0, 20] },
+
+      // FIRMAS AL PIE DEL HISTORIAL
       {
         columns: [
           {
             width: '*',
             stack: [
-              getSignatureImage(record.patient_signature_url),
-              { text: `\nFirma del Paciente / Declarante\nC.I.: ${record.consent_holder_ci || patient?.ci || '-'}`, style: 'signatureTitle', alignment: 'center' }
+              { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 180, y2: 0, lineWidth: 1, lineColor: '#666666' }], alignment: 'center', margin: [0, 30, 0, 0] },
+              { text: `\nFirma del Paciente / Tutor\nC.I.: ${patient?.ci || '_______________'}`, style: 'signatureTitle', alignment: 'center' }
             ]
           },
           {
             width: '*',
             stack: [
-              getSignatureImage(record.dentist_signature_url),
+              { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 180, y2: 0, lineWidth: 1, lineColor: '#666666' }], alignment: 'center', margin: [0, 30, 0, 0] },
               { text: '\nFirma y Sello del Odontólogo\nOrtodoncista Tratante', style: 'signatureTitle', alignment: 'center' }
             ]
           }
         ]
       }
     ],
-    styles: commonStyles
+    styles: commonStyles,
+    pageMargins: [40, 30, 40, 30]
   };
 
-  pdfMake.createPdf(docDefinition).download(`Ortodoncia_${patient?.nombre}_${patient?.apellido}.pdf`);
+  pdfMake.createPdf(docDefinition).download(`Historial_Ortodoncia_${patient?.nombre || 'Paciente'}_${patient?.apellido || ''}.pdf`);
 };
 
 // ------------------------------------------------------------
-// 2. PDF IMPLANTOLOGÍA (HISTORIA + CONSENTIMIENTO + PAGOS)
+// 2. PDF CONSENTIMIENTO INFORMADO DE ORTODONCIA (STANDALONE)
+// ------------------------------------------------------------
+export const generateOrthodonticConsentPdf = async (patient, clinic, tutorName = '') => {
+  const pdfMake = await getPdfMake();
+
+  const patientFullName = `${patient?.nombre || ''} ${patient?.apellido || ''}`.trim() || '__________________________';
+  const patientCi = patient?.ci || '________';
+  const displayTutor = tutorName ? tutorName : '___________________________';
+
+  const docDefinition = {
+    content: [
+      ...buildHeader(clinic, 'Documento Legal Clínico'),
+      
+      { text: 'CONSENTIMIENTO INFORMADO PARA TRATAMIENTO DE ORTODONCIA', style: 'legalTitle' },
+
+      {
+        text: [
+          'Yo, ',
+          { text: '__________________________', bold: true },
+          ', con C.I. ',
+          { text: `${patientCi}`, bold: true },
+          ', declaro que he recibido información clara y suficiente sobre el tratamiento de ortodoncia que se realizará al paciente ',
+          { text: `${patientFullName}`, bold: true },
+          '.'
+        ],
+        style: 'legalBody',
+        margin: [0, 0, 0, 10]
+      },
+
+      { text: 'He sido informado(a) de que:', style: { fontSize: 9.5, bold: true, color: '#0d6efd', margin: [0, 0, 0, 6] } },
+
+      {
+        ul: [
+          'El tratamiento tiene como objetivo mejorar la alineación dental, la mordida, la función y la estética; sin embargo, no se pueden garantizar resultados exactos.',
+          'La duración estimada del tratamiento dependerá de la complejidad del caso y de mi colaboración, pudiendo prolongarse por factores biológicos o por el incumplimiento de las indicaciones.',
+          'Es indispensable asistir puntualmente a los controles programados y mantener una adecuada higiene bucal durante todo el tratamiento.',
+          'Debo evitar alimentos duros, pegajosos o muy crujientes que puedan dañar los aparatos de ortodoncia.',
+          'Es posible experimentar molestias, sensibilidad o dolor leve después de la colocación o activación de los aparatos, las cuales generalmente son temporales.',
+          'Existen riesgos potenciales, como descalcificaciones, caries, inflamación de encías, reabsorción radicular, recidiva, fractura o desprendimiento de los aparatos y necesidad de modificar el plan de tratamiento si las condiciones clínicas lo requieren.',
+          'Al finalizar el tratamiento será necesario el uso de retenedores para mantener los resultados obtenidos. El incumplimiento de esta indicación puede ocasionar movimientos dentarios y recaídas.',
+          'He tenido la oportunidad de realizar preguntas, las cuales fueron respondidas de manera satisfactoria, y comprendo los beneficios, riesgos, alternativas y limitaciones del tratamiento.'
+        ],
+        style: 'legalItem',
+        margin: [0, 0, 0, 10]
+      },
+
+      {
+        text: 'Con esta información, manifiesto que otorgo mi consentimiento libre y voluntario para iniciar el tratamiento de ortodoncia.',
+        style: { fontSize: 9, bold: true, margin: [0, 4, 0, 15] }
+      },
+
+      // DATOS DEL PACIENTE Y TUTOR
+      {
+        table: {
+          widths: ['*', '*'],
+          body: [
+            [
+              { text: [{ text: 'Nombre del paciente: ', bold: true }, `${patientFullName}`], style: 'bodyText' },
+              { text: [{ text: 'Nombre del tutor (si corresponde): ', bold: true }, `${displayTutor}`], style: 'bodyText' }
+            ]
+          ]
+        },
+        layout: 'noBorders',
+        margin: [0, 0, 0, 25]
+      },
+
+      // ESPACIOS DE FIRMAS Y DATOS FINALES
+      {
+        columns: [
+          {
+            width: '*',
+            stack: [
+              { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 190, y2: 0, lineWidth: 1, lineColor: '#666666' }], alignment: 'center', margin: [0, 30, 0, 0] },
+              { text: '\nFirma del paciente o tutor\nC.I.: ' + (patient?.ci || '_______________'), style: 'signatureTitle', alignment: 'center' }
+            ]
+          },
+          {
+            width: '*',
+            stack: [
+              { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 190, y2: 0, lineWidth: 1, lineColor: '#666666' }], alignment: 'center', margin: [0, 30, 0, 0] },
+              { text: '\nFirma del odontólogo\nSello y Matrícula Profesional', style: 'signatureTitle', alignment: 'center' }
+            ]
+          }
+        ],
+        margin: [0, 0, 0, 20]
+      },
+
+      {
+        columns: [
+          { width: '*', text: [{ text: 'Lugar: ', bold: true }, (clinic?.ciudad || clinic?.direccion || '___________________')], style: 'bodyText' },
+          { width: '*', text: [{ text: 'Fecha: ', bold: true }, '____ / ____ / ________'], style: 'bodyText', alignment: 'right' }
+        ]
+      }
+    ],
+    styles: commonStyles,
+    pageMargins: [40, 35, 40, 35]
+  };
+
+  pdfMake.createPdf(docDefinition).download(`Consentimiento_Ortodoncia_${patient?.nombre || 'Paciente'}_${patient?.apellido || ''}.pdf`);
+};
+
+// ------------------------------------------------------------
+// 3. PDF IMPLANTOLOGÍA (HISTORIA + CONSENTIMIENTO + PAGOS)
 // ------------------------------------------------------------
 export const generateImplantHistoryPdf = async (record, patient, clinic) => {
   const pdfMake = await getPdfMake();
@@ -211,7 +390,8 @@ export const generateImplantConsentPdf = async (record, patient, clinic) => {
 
       {
         text: `Yo, ${record.consent_holder_name || (patient?.nombre + ' ' + patient?.apellido)}, con C.I. ${record.consent_holder_ci || patient?.ci || ''}, declaro haber sido informado sobre el tratamiento con implantes dentales, sus riesgos (infección, hematomas, parestesia, falla de osteointegración), beneficios y alternativas. Autorizo voluntariamente al equipo médico de ${clinic?.nombre || 'la clínica'} a realizar la cirugía de colocación e intervención complementaria.`,
-        style: 'legalText'
+        style: 'legalBody',
+        margin: [0, 10, 0, 20]
       },
 
       {
@@ -297,7 +477,7 @@ export const generateImplantPaymentPlanPdf = async (plan, patient, clinic) => {
 };
 
 // ------------------------------------------------------------
-// 3. PDF CIRUGÍA ORAL (HISTORIA MULTIPÁGINA + CONSENTIMIENTO)
+// 4. PDF CIRUGÍA ORAL (HISTORIA MULTIPÁGINA + CONSENTIMIENTO)
 // ------------------------------------------------------------
 export const generateOralSurgeryHistoryPdf = async (record, followups = [], patient, clinic) => {
   const pdfMake = await getPdfMake();
@@ -377,7 +557,8 @@ export const generateOralSurgeryConsentPdf = async (record, patient, clinic) => 
 
       {
         text: `Yo, ${patient?.nombre} ${patient?.apellido}, con C.I. ${record.consent_holder_ci || patient?.ci || ''}, declaro que el cirujano me ha explicado de forma clara el procedimiento quirúrgico de (${record.consent_procedure || 'Cirugía Oral'}), sus riesgos (sangrado, hematomas, infección, parestesia), beneficios e indicaciones. Autorizo libre y voluntariamente la intervención quirúrgica en ${clinic?.nombre || 'la clínica'}.`,
-        style: 'legalText'
+        style: 'legalBody',
+        margin: [0, 10, 0, 20]
       },
 
       {
