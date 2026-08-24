@@ -226,9 +226,12 @@ export const generateOrthodonticPdf = async (record, patient, clinic) => {
 export const generateOrthodonticConsentPdf = async (patient, clinic, tutorName = '') => {
   const pdfMake = await getPdfMake();
 
-  const patientFullName = `${patient?.nombre || ''} ${patient?.apellido || ''}`.trim() || '__________________________';
-  const patientCi = patient?.ci || '________';
-  const displayTutor = tutorName ? tutorName : '___________________________';
+  const patientFullName = `${patient?.nombre || ''} ${patient?.apellido || ''}`.trim() || 'Paciente sin registrar';
+  const patientCi = patient?.ci || 'Sin registro';
+  const declarantName = tutorName && tutorName.trim() ? tutorName.trim() : patientFullName;
+  const displayTutor = tutorName && tutorName.trim() ? tutorName.trim() : 'No aplica (Mayor de edad)';
+  const formattedDate = new Date().toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const clinicCity = clinic?.ciudad || clinic?.direccion || 'Bolivia';
 
   const docDefinition = {
     content: [
@@ -239,11 +242,11 @@ export const generateOrthodonticConsentPdf = async (patient, clinic, tutorName =
       {
         text: [
           'Yo, ',
-          { text: '__________________________', bold: true },
+          { text: `${declarantName}`, bold: true, color: '#0d6efd' },
           ', con C.I. ',
-          { text: `${patientCi}`, bold: true },
+          { text: `${patientCi}`, bold: true, color: '#0d6efd' },
           ', declaro que he recibido información clara y suficiente sobre el tratamiento de ortodoncia que se realizará al paciente ',
-          { text: `${patientFullName}`, bold: true },
+          { text: `${patientFullName}`, bold: true, color: '#0d6efd' },
           '.'
         ],
         style: 'legalBody',
@@ -269,54 +272,73 @@ export const generateOrthodonticConsentPdf = async (patient, clinic, tutorName =
 
       {
         text: 'Con esta información, manifiesto que otorgo mi consentimiento libre y voluntario para iniciar el tratamiento de ortodoncia.',
-        style: { fontSize: 9, bold: true, margin: [0, 4, 0, 15] }
+        style: { fontSize: 9, bold: true, margin: [0, 4, 0, 12] }
       },
 
-      // DATOS DEL PACIENTE Y TUTOR
+      // DATOS DEL PACIENTE Y TUTOR (TABLA)
       {
         table: {
-          widths: ['*', '*'],
+          widths: ['50%', '50%'],
           body: [
             [
               { text: [{ text: 'Nombre del paciente: ', bold: true }, `${patientFullName}`], style: 'bodyText' },
-              { text: [{ text: 'Nombre del tutor (si corresponde): ', bold: true }, `${displayTutor}`], style: 'bodyText' }
+              { text: [{ text: 'C.I. del paciente: ', bold: true }, `${patientCi}`], style: 'bodyText' }
+            ],
+            [
+              { text: [{ text: 'Padre, madre o tutor: ', bold: true }, `${displayTutor}`], style: 'bodyText' },
+              { text: [{ text: 'Teléfono / Celular: ', bold: true }, `${patient?.celular || 'No registrado'}`], style: 'bodyText' }
             ]
           ]
         },
-        layout: 'noBorders',
-        margin: [0, 0, 0, 25]
+        layout: {
+          fillColor: () => '#f8f9fa',
+          hLineWidth: () => 0.5,
+          vLineWidth: () => 0.5,
+          hLineColor: () => '#dee2e6',
+          vLineColor: () => '#dee2e6',
+          paddingLeft: () => 8,
+          paddingRight: () => 8,
+          paddingTop: () => 5,
+          paddingBottom: () => 5
+        },
+        margin: [0, 0, 0, 20]
       },
 
-      // ESPACIOS DE FIRMAS Y DATOS FINALES
+      // ESPACIOS DE FIRMAS CON DATOS DEL PACIENTE Y ODONTÓLOGO LLENADOS
       {
         columns: [
           {
             width: '*',
             stack: [
-              { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 190, y2: 0, lineWidth: 1, lineColor: '#666666' }], alignment: 'center', margin: [0, 30, 0, 0] },
-              { text: '\nFirma del paciente o tutor\nC.I.: ' + (patient?.ci || '_______________'), style: 'signatureTitle', alignment: 'center' }
+              { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 190, y2: 0, lineWidth: 1, lineColor: '#666666' }], alignment: 'center', margin: [0, 25, 0, 0] },
+              { text: '\nFirma del Paciente o Tutor', style: 'signatureTitle', alignment: 'center' },
+              { text: `Nombre: ${declarantName}`, style: 'signatureSub', alignment: 'center' },
+              { text: `C.I.: ${patientCi}`, style: 'signatureSub', alignment: 'center' }
             ]
           },
           {
             width: '*',
             stack: [
-              { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 190, y2: 0, lineWidth: 1, lineColor: '#666666' }], alignment: 'center', margin: [0, 30, 0, 0] },
-              { text: '\nFirma del odontólogo\nSello y Matrícula Profesional', style: 'signatureTitle', alignment: 'center' }
+              { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 190, y2: 0, lineWidth: 1, lineColor: '#666666' }], alignment: 'center', margin: [0, 25, 0, 0] },
+              { text: '\nFirma del Odontólogo', style: 'signatureTitle', alignment: 'center' },
+              { text: 'Ortodoncista Tratante', style: 'signatureSub', alignment: 'center' },
+              { text: 'Sello y Matrícula Profesional', style: 'signatureSub', alignment: 'center' }
             ]
           }
         ],
-        margin: [0, 0, 0, 20]
+        margin: [0, 0, 0, 18]
       },
 
+      // LUGAR Y FECHA CON DATOS PRECARGADOS
       {
         columns: [
-          { width: '*', text: [{ text: 'Lugar: ', bold: true }, (clinic?.ciudad || clinic?.direccion || '___________________')], style: 'bodyText' },
-          { width: '*', text: [{ text: 'Fecha: ', bold: true }, '____ / ____ / ________'], style: 'bodyText', alignment: 'right' }
+          { width: '*', text: [{ text: 'Lugar: ', bold: true }, `${clinicCity}`], style: 'bodyText' },
+          { width: '*', text: [{ text: 'Fecha: ', bold: true }, `${formattedDate}`], style: 'bodyText', alignment: 'right' }
         ]
       }
     ],
     styles: commonStyles,
-    pageMargins: [40, 35, 40, 35]
+    pageMargins: [40, 30, 40, 30]
   };
 
   pdfMake.createPdf(docDefinition).download(`Consentimiento_Ortodoncia_${patient?.nombre || 'Paciente'}_${patient?.apellido || ''}.pdf`);
