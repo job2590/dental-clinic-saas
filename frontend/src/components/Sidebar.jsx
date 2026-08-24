@@ -64,8 +64,29 @@ const Sidebar = ({ isOpen }) => {
                 {isOpen && <span className="ms-3 fw-semibold">Caja</span>}
               </NavLink>
             </li>
+            {/* Separador de Especialidades */}
+            {isOpen && <li className="nav-item px-3 pt-3 pb-1"><small className="text-muted fw-bold text-uppercase" style={{fontSize:'0.65rem', letterSpacing:'0.08em'}}>Especialidades</small></li>}
+            <li className="nav-item mb-2">
+              <NavLink to="/ortodoncia" className={({isActive}) => `nav-link rounded d-flex align-items-center px-3 py-2 ${isActive ? 'bg-primary text-white shadow-sm' : 'text-secondary hover-bg'}`}>
+                <i className="bi bi-activity fs-5"></i>
+                {isOpen && <span className="ms-3 fw-semibold">Ortodoncia</span>}
+              </NavLink>
+            </li>
+            <li className="nav-item mb-2">
+              <NavLink to="/implantologia" className={({isActive}) => `nav-link rounded d-flex align-items-center px-3 py-2 ${isActive ? 'bg-primary text-white shadow-sm' : 'text-secondary hover-bg'}`}>
+                <i className="bi bi-bounding-box-circles fs-5"></i>
+                {isOpen && <span className="ms-3 fw-semibold">Implantología</span>}
+              </NavLink>
+            </li>
+            <li className="nav-item mb-2">
+              <NavLink to="/cirugia-oral" className={({isActive}) => `nav-link rounded d-flex align-items-center px-3 py-2 ${isActive ? 'bg-primary text-white shadow-sm' : 'text-secondary hover-bg'}`}>
+                <i className="bi bi-scissors fs-5"></i>
+                {isOpen && <span className="ms-3 fw-semibold">Cirugía Oral</span>}
+              </NavLink>
+            </li>
           </>
         )}
+
       </ul>
       
       <div className="sidebar-footer mt-auto p-4 border-top border-light">
