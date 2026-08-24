@@ -157,15 +157,18 @@ const ImplantologiaPage = () => {
     }
     try {
       setSaving(true);
-      const saved = await saveImplantRecord(record, user.clinic_id);
+      const saved = await saveImplantRecord({
+        ...record,
+        dentist_id: record.dentist_id || user?.id || null
+      }, user.clinic_id);
       setRecord(saved);
       if (paymentPlan.patient_id && !paymentPlan.id) {
         setPaymentPlan(prev => ({ ...prev, implant_record_id: saved.id }));
       }
-      Swal.fire({ title: '¡Guardado!', icon: 'success', timer: 1500, showConfirmButton: false });
+      Swal.fire({ title: '¡Guardado!', text: 'Historia de implantología guardada correctamente.', icon: 'success', timer: 1500, showConfirmButton: false });
     } catch (err) {
-      console.error(err);
-      Swal.fire('Error', 'No se pudo guardar el expediente.', 'error');
+      console.error('Error al guardar implantología:', err);
+      Swal.fire('Error', err?.message || 'No se pudo guardar el expediente.', 'error');
     } finally {
       setSaving(false);
     }
@@ -181,14 +184,15 @@ const ImplantologiaPage = () => {
       const added = await addImplantEvolutionNote({
         ...newNote,
         implant_record_id: record.id,
-        patient_id: record.patient_id
+        patient_id: record.patient_id,
+        dentist_id: user?.id || null
       }, user.clinic_id);
       setEvolutionNotes(prev => [added, ...prev]);
       setNewNote({ visit_date: new Date().toISOString().split('T')[0], procedure_performed: '', clinical_findings: '' });
       Swal.fire({ title: '¡Anotación de Control Añadida!', icon: 'success', timer: 1200, showConfirmButton: false });
     } catch (err) {
-      console.error(err);
-      Swal.fire('Error', 'No se pudo guardar la nota de evolución.', 'error');
+      console.error('Error al añadir nota de evolución:', err);
+      Swal.fire('Error', err?.message || 'No se pudo guardar la nota de evolución.', 'error');
     }
   };
 
@@ -207,8 +211,8 @@ const ImplantologiaPage = () => {
       setPaymentPlan(saved);
       Swal.fire({ title: '¡Plan de Pagos Guardado!', icon: 'success', timer: 1500, showConfirmButton: false });
     } catch (err) {
-      console.error(err);
-      Swal.fire('Error', 'No se pudo guardar el plan de pagos.', 'error');
+      console.error('Error al guardar plan de pagos:', err);
+      Swal.fire('Error', err?.message || 'No se pudo guardar el plan de pagos.', 'error');
     } finally {
       setSaving(false);
     }

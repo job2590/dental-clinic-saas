@@ -194,7 +194,10 @@ const OrtodonciaForm = () => {
 
     try {
       setSaving(true);
-      const savedRecord = await saveOrthodonticRecord(formData, user.clinic_id);
+      const savedRecord = await saveOrthodonticRecord({
+        ...formData,
+        dentist_id: formData.dentist_id || user?.id || null
+      }, user.clinic_id);
       setFormData(savedRecord);
 
       Swal.fire({
@@ -208,8 +211,8 @@ const OrtodonciaForm = () => {
         navigate(`/ortodoncia/editar/${savedRecord.id}`, { replace: true });
       }
     } catch (err) {
-      console.error(err);
-      Swal.fire('Error', 'No se pudo guardar el expediente.', 'error');
+      console.error('Error guardando ortodoncia:', err);
+      Swal.fire('Error', err?.message || 'No se pudo guardar el expediente.', 'error');
     } finally {
       setSaving(false);
     }

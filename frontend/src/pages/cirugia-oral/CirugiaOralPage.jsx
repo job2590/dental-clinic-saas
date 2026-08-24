@@ -156,12 +156,15 @@ const CirugiaOralPage = () => {
     }
     try {
       setSaving(true);
-      const saved = await saveOralSurgeryRecord(record, user.clinic_id);
+      const saved = await saveOralSurgeryRecord({
+        ...record,
+        dentist_id: record.dentist_id || user?.id || null
+      }, user.clinic_id);
       setRecord(saved);
-      Swal.fire({ title: '¡Expediente Guardado!', icon: 'success', timer: 1500, showConfirmButton: false });
+      Swal.fire({ title: '¡Expediente Guardado!', text: 'Historia clínica de cirugía oral guardada correctamente.', icon: 'success', timer: 1500, showConfirmButton: false });
     } catch (err) {
-      console.error(err);
-      Swal.fire('Error', 'No se pudo guardar el expediente.', 'error');
+      console.error('Error al guardar cirugía oral:', err);
+      Swal.fire('Error', err?.message || 'No se pudo guardar el expediente.', 'error');
     } finally {
       setSaving(false);
     }
@@ -184,8 +187,8 @@ const CirugiaOralPage = () => {
       setNewFollowup({ control_date: new Date().toISOString().split('T')[0], findings: '' });
       Swal.fire({ title: '¡Control Añadido!', icon: 'success', timer: 1200, showConfirmButton: false });
     } catch (err) {
-      console.error(err);
-      Swal.fire('Error', 'No se pudo guardar el control.', 'error');
+      console.error('Error al añadir control post-quirúrgico:', err);
+      Swal.fire('Error', err?.message || 'No se pudo guardar el control.', 'error');
     }
   };
 
